@@ -95,7 +95,7 @@ class CronBot {
       // eslint-disable-next-line prettier/prettier
       const topAttrs = listing.topAttributes?.map( attr => attr.value ).join(", ") || "";
       // eslint-disable-next-line prettier/prettier
-      return `[Score ${listing.rank} @ ${listing.price.toFixed(2)} (${topAttrs})](<${listing.url}>)`;
+      return `[Score ${listing.score} @ ${listing.price.toFixed(2)} (${topAttrs})](<${listing.url}>)`;
     };
 
     // eslint-disable-next-line prettier/prettier
