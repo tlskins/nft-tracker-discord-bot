@@ -1,4 +1,5 @@
 import { EmojiResolvable, Snowflake, WebhookMessageOptions } from "discord.js";
+import internal from "stream";
 
 export interface Config {
   timezone: string;
@@ -65,4 +66,12 @@ export interface MarketListing {
   scorePercentChange: number | undefined;
   listedForSale: boolean;
   isNew: boolean;
+
+  topAttributes: [TokenAttributes] | undefined;
+}
+
+export interface TokenAttributes {
+  name: string;
+  value: string;
+  score: number;
 }

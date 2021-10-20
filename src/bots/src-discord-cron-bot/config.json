@@ -2,11 +2,14 @@
   "timezone": "America/New_York",
   "rules": [
     {
-      "cronExpression": "*/15 * * * *",
+      "cronExpression": "*/10 * * * *",
       "channelPolicy": "all",
       "messagePolicy": "all",
       "reactionPolicy": "single",
-      "channelIds": ["899854181039476767"],
+      "channelIds": [
+        "899854181039476767",
+        "900213683161022504"
+      ],
       "messages": [
         {
           "content": "hourly reminder to hydrate!"

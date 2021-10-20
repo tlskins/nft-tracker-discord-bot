@@ -16,6 +16,7 @@ import {
   Policy,
   Rule,
   CollectionTrackerResp,
+  MarketListing,
 } from "../types";
 import config from "../config.json";
 
@@ -29,19 +30,18 @@ const getRandomInt = (min: number, max: number): number => {
 class CronBot {
   client: Client;
   rule: Rule;
-  lastBroadcast: Moment.Moment | undefined;
+  lastDegodsBroadcast: Moment.Moment | undefined;
+  lastJungleCatsBroadcast: Moment.Moment | undefined;
 
   constructor(client: Client, rule: Rule) {
     this.client = client;
     this.rule = rule;
   }
 
-  async sendMessages(): Promise<void> {
-    const channelIds = this._applyPolicyToList(
-      this.rule.channelPolicy,
-      this.rule.channelIds
-    ) as Snowflake[];
-
+  async sendDegodsMessage(channelId: string): Promise<void> {
+    console.log(
+      `sending degods msg to channel ${channelId} @ ${Moment().format()}`
+    );
     const {
       data: {
         tracker: {
@@ -56,30 +56,75 @@ class CronBot {
     } = (await rest.get("/degods")) as CollectionTrackerResp;
 
     // eslint-disable-next-line prettier/prettier
-    let msg = `${currentBest.isNew ? "@everyone " : ""} ${collection} [${currentBest.rank} @ ${currentBest.price}](<${currentBest.url}>)\n`;
+    let degodsMsg = `${currentBest.isNew ? "@everyone\nNew Best " : ""}${collection} [Rank ${currentBest.rank} @ ${currentBest.price.toFixed(2)}](<${currentBest.url}>)\n`;
     // eslint-disable-next-line prettier/prettier
-    msg += `Current Floor: ${floorPrice.floorPrice.toFixed(2)} ${ floorPrice.percentChange ? `%${floorPrice.percentChange.toFixed(2)}` : ""}\n`;
-    // eslint-disable-next-line prettier/prettier
-    msg += `Past Floors: Day ${lastDayFloor.floorPrice.toFixed(2)} | Week ${lastWeekFloor.floorPrice.toFixed(2)}\n\n`;
+    degodsMsg += `Floors: Now ${floorPrice.floorPrice.toFixed(2)} ${ floorPrice.percentChange ? `%${floorPrice.percentChange.toFixed(2)}` : ""} | Day ${lastDayFloor.floorPrice.toFixed(2)} | Week ${lastWeekFloor.floorPrice.toFixed(2)}\n\n`;
     currentListings.forEach((listing) => {
-      msg += `[${listing.rank} @ ${listing.price}](<${listing.url}>)\n`;
+      // eslint-disable-next-line prettier/prettier
+      degodsMsg += `[${listing.rank} @ ${listing.price.toFixed(2)}](<${listing.url}>)\n`;
     });
 
-    if (
-      !currentBest.isNew &&
-      !!this.lastBroadcast &&
-      this.lastBroadcast.isAfter(Moment().add(-1, "hours"))
-    ) {
+    // eslint-disable-next-line prettier/prettier
+    if ( !currentBest.isNew && !!this.lastDegodsBroadcast && this.lastDegodsBroadcast.isAfter(Moment().add(-1, "hours"))) {
       return;
     }
 
-    channelIds.forEach(async (channelId) => {
-      const webhook = await this._getWebhook(channelId);
+    const degodsHook = await this._getWebhook(channelId);
+    await degodsHook.send(degodsMsg);
+    this.lastDegodsBroadcast = Moment();
+  }
 
-      await webhook.send(msg);
+  async sendJungleCatsMessage(channelId: string): Promise<void> {
+    console.log(
+      `sending jungle cats msg to channel ${channelId} @ ${Moment().format()}`
+    );
+    const {
+      data: {
+        tracker: {
+          collection,
+          currentBest,
+          currentListings,
+          floorPrice,
+          lastDayFloor,
+          lastWeekFloor,
+        },
+      },
+    } = (await rest.get("/jungle-cats")) as CollectionTrackerResp;
+
+    const getCatsLink = (listing: MarketListing): string => {
+      // eslint-disable-next-line prettier/prettier
+      const topAttrs = listing.topAttributes?.map( attr => attr.value ).join(", ") || "";
+      // eslint-disable-next-line prettier/prettier
+      return `[Score ${listing.rank} @ ${listing.price.toFixed(2)} (${topAttrs})](<${listing.url}>)`;
+    };
+
+    // eslint-disable-next-line prettier/prettier
+    let catsMsg = `${currentBest.isNew ? "@everyone \nNew Best " : ""}${collection} ${getCatsLink(currentBest)}\n`;
+    // eslint-disable-next-line prettier/prettier
+    catsMsg += `Floors: Now ${floorPrice.floorPrice.toFixed(2)} ${ floorPrice.percentChange ? `%${floorPrice.percentChange.toFixed(2)}` : ""} | Day ${lastDayFloor.floorPrice.toFixed(2)} | Week ${lastWeekFloor.floorPrice.toFixed(2)}\n\n`;
+    currentListings.forEach((listing) => {
+      // eslint-disable-next-line prettier/prettier
+      catsMsg += `${getCatsLink(listing)}\n`;
     });
 
-    this.lastBroadcast = Moment();
+    // eslint-disable-next-line prettier/prettier
+    if ( !currentBest.isNew && !!this.lastJungleCatsBroadcast && this.lastJungleCatsBroadcast.isAfter(Moment().add(-1, "hours"))) {
+      return;
+    }
+
+    const catsHook = await this._getWebhook(channelId);
+    await catsHook.send(catsMsg);
+    this.lastJungleCatsBroadcast = Moment();
+  }
+
+  async sendMessages(): Promise<void> {
+    const channelIds = this._applyPolicyToList(
+      this.rule.channelPolicy,
+      this.rule.channelIds
+    ) as Snowflake[];
+
+    this.sendDegodsMessage(channelIds[0]);
+    this.sendJungleCatsMessage(channelIds[1]);
   }
 
   private _applyPolicyToList(
