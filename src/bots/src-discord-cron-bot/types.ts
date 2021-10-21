@@ -36,6 +36,8 @@ export interface CollectionTracker {
   lastDayFloor: FloorPrice;
   lastWeekFloor: FloorPrice;
   lastUpdated: string;
+  hourlySales: number | undefined;
+  averageSalePrice: number | undefined;
 
   currentBest: MarketListing;
   lastDayBest: MarketListing;
@@ -61,11 +63,14 @@ export interface MarketListing {
   marketplace: string;
   rank: number;
   price: number;
+  suggestedPrice: number | undefined;
   marketFloor: number | undefined;
   score: number;
   scorePercentChange: number | undefined;
   listedForSale: boolean;
   isNew: boolean;
+  dailyBestScoreRank: number | undefined;
+  weeklyBestScoreRank: number | undefined;
 
   topAttributes: [TokenAttributes] | undefined;
 }

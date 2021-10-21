@@ -1,15 +1,7 @@
 import { CronJob } from "cron";
 import rest from "../rest";
 import Moment from "moment";
-import {
-  Client,
-  EmojiResolvable,
-  Message,
-  Snowflake,
-  TextChannel,
-  Webhook,
-  WebhookMessageOptions,
-} from "discord.js";
+import { Client, Snowflake, TextChannel, Webhook } from "discord.js";
 import {
   Config,
   CronRuleItem,
@@ -18,6 +10,12 @@ import {
   CollectionTrackerResp,
   MarketListing,
 } from "../types";
+import {
+  getTopAttrsTxt,
+  getBestRankTxt,
+  getSuggestedPriceTxt,
+  getFloorPriceTxt,
+} from "../helpers";
 import config from "../config.json";
 
 const getRandomInt = (min: number, max: number): number => {
@@ -32,6 +30,7 @@ class CronBot {
   rule: Rule;
   lastDegodsBroadcast: Moment.Moment | undefined;
   lastJungleCatsBroadcast: Moment.Moment | undefined;
+  lastRogueSharksBroadcast: Moment.Moment | undefined;
 
   constructor(client: Client, rule: Rule) {
     this.client = client;
@@ -42,6 +41,18 @@ class CronBot {
     console.log(
       `sending degods msg to channel ${channelId} @ ${Moment().format()}`
     );
+
+    let collectionData: CollectionTrackerResp;
+    try {
+      collectionData = (await rest.get("/degods")) as CollectionTrackerResp;
+    } catch (err) {
+      console.log(err);
+      const degodsHook = await this._getWebhook(channelId);
+      await degodsHook.send("@timchi Error getting degods data!");
+
+      return;
+    }
+
     const {
       data: {
         tracker: {
@@ -53,15 +64,21 @@ class CronBot {
           lastWeekFloor,
         },
       },
-    } = (await rest.get("/degods")) as CollectionTrackerResp;
+    } = collectionData;
+
+    const getDegodsLink = (listing: MarketListing): string => {
+      const bestRk = getBestRankTxt(listing);
+
+      // eslint-disable-next-line prettier/prettier
+      return `[Rank ${listing.rank.toFixed(0)} | Score ${listing.score.toFixed(2)} @ ${listing.price.toFixed(2)} ${bestRk}](<${listing.url}>)`;
+    };
 
     // eslint-disable-next-line prettier/prettier
-    let degodsMsg = `${currentBest.isNew ? "@everyone\nNew Best " : ""}${collection} [Rank ${currentBest.rank} @ ${currentBest.price.toFixed(2)}](<${currentBest.url}>)\n`;
-    // eslint-disable-next-line prettier/prettier
-    degodsMsg += `Floors: Now ${floorPrice.floorPrice.toFixed(2)} ${ floorPrice.percentChange ? `%${floorPrice.percentChange.toFixed(2)}` : ""} | Day ${lastDayFloor.floorPrice.toFixed(2)} | Week ${lastWeekFloor.floorPrice.toFixed(2)}\n\n`;
+    let degodsMsg = `${currentBest.isNew ? "@everyone\nNew Best" : "Best"} ${collection} ${getDegodsLink(currentBest)}\n`;
+    degodsMsg +=
+      getFloorPriceTxt(floorPrice, lastDayFloor, lastWeekFloor) + "\n";
     currentListings.forEach((listing) => {
-      // eslint-disable-next-line prettier/prettier
-      degodsMsg += `[${listing.rank} @ ${listing.price.toFixed(2)}](<${listing.url}>)\n`;
+      degodsMsg += `${getDegodsLink(listing)}\n`;
     });
 
     // eslint-disable-next-line prettier/prettier
@@ -74,10 +91,24 @@ class CronBot {
     this.lastDegodsBroadcast = Moment();
   }
 
-  async sendJungleCatsMessage(channelId: string): Promise<void> {
+  async sendRogueSharksMessage(channelId: string): Promise<void> {
     console.log(
-      `sending jungle cats msg to channel ${channelId} @ ${Moment().format()}`
+      `sending rogue sharks msg to channel ${channelId} @ ${Moment().format()}`
     );
+
+    let collectionData: CollectionTrackerResp;
+    try {
+      collectionData = (await rest.get(
+        "/rogue-sharks"
+      )) as CollectionTrackerResp;
+    } catch (err) {
+      console.log(err);
+      const catsHook = await this._getWebhook(channelId);
+      await catsHook.send("@timchi Error getting Rogue Sharks data!");
+
+      return;
+    }
+
     const {
       data: {
         tracker: {
@@ -87,23 +118,88 @@ class CronBot {
           floorPrice,
           lastDayFloor,
           lastWeekFloor,
+          hourlySales,
+          averageSalePrice,
         },
       },
-    } = (await rest.get("/jungle-cats")) as CollectionTrackerResp;
+    } = collectionData;
 
-    const getCatsLink = (listing: MarketListing): string => {
+    const getRogueSharksLink = (listing: MarketListing): string => {
+      const topAttrs = getTopAttrsTxt(listing);
+      const bestRk = getBestRankTxt(listing);
+      const suggPrice = getSuggestedPriceTxt(listing);
+
       // eslint-disable-next-line prettier/prettier
-      const topAttrs = listing.topAttributes?.map( attr => attr.value ).join(", ") || "";
-      // eslint-disable-next-line prettier/prettier
-      return `[Score ${listing.score} @ ${listing.price.toFixed(2)} (${topAttrs})](<${listing.url}>)`;
+      return `[Score ${listing.score.toFixed(2)} @ ${listing.price.toFixed(2)} ${topAttrs} ${bestRk} ${suggPrice}](<${listing.url}>)`;
     };
 
     // eslint-disable-next-line prettier/prettier
-    let catsMsg = `${currentBest.isNew ? "@everyone \nNew Best " : ""}${collection} ${getCatsLink(currentBest)}\n`;
+    let sharksMsg = `${currentBest.isNew ? "@everyone \nNew Best " : "Best "} ${collection} ${getRogueSharksLink(currentBest)}\n`;
+    sharksMsg += getFloorPriceTxt(floorPrice, lastDayFloor, lastWeekFloor);
     // eslint-disable-next-line prettier/prettier
-    catsMsg += `Floors: Now ${floorPrice.floorPrice.toFixed(2)} ${ floorPrice.percentChange ? `%${floorPrice.percentChange.toFixed(2)}` : ""} | Day ${lastDayFloor.floorPrice.toFixed(2)} | Week ${lastWeekFloor.floorPrice.toFixed(2)}\n\n`;
+    sharksMsg += `Hourly Sales ${hourlySales?.toFixed(2) || "?"} | Avg Sale ${averageSalePrice?.toFixed(2) || "?"}\n\n`;
     currentListings.forEach((listing) => {
+      sharksMsg += `${getRogueSharksLink(listing)}\n`;
+    });
+
+    // eslint-disable-next-line prettier/prettier
+    if ( !currentBest.isNew && !!this.lastRogueSharksBroadcast && this.lastRogueSharksBroadcast.isAfter(Moment().add(-1, "hours"))) {
+      return;
+    }
+
+    const sharksHook = await this._getWebhook(channelId);
+    await sharksHook.send(sharksMsg);
+    this.lastRogueSharksBroadcast = Moment();
+  }
+
+  async sendJungleCatsMessage(channelId: string): Promise<void> {
+    console.log(
+      `sending jungle cats msg to channel ${channelId} @ ${Moment().format()}`
+    );
+
+    let collectionData: CollectionTrackerResp;
+    try {
+      collectionData = (await rest.get(
+        "/jungle-cats"
+      )) as CollectionTrackerResp;
+    } catch (err) {
+      console.log(err);
+      const catsHook = await this._getWebhook(channelId);
+      await catsHook.send("@timchi Error getting Jungle Cats data!");
+
+      return;
+    }
+
+    const {
+      data: {
+        tracker: {
+          collection,
+          currentBest,
+          currentListings,
+          floorPrice,
+          lastDayFloor,
+          lastWeekFloor,
+          hourlySales,
+          averageSalePrice,
+        },
+      },
+    } = collectionData;
+
+    const getCatsLink = (listing: MarketListing): string => {
+      const topAttrs = getTopAttrsTxt(listing);
+      const bestRk = getBestRankTxt(listing);
+      const suggPrice = getSuggestedPriceTxt(listing);
+
       // eslint-disable-next-line prettier/prettier
+      return `[Score ${listing.score.toFixed(2)} @ ${listing.price.toFixed(2)} ${topAttrs} ${bestRk} ${suggPrice}](<${listing.url}>)`;
+    };
+
+    // eslint-disable-next-line prettier/prettier
+    let catsMsg = `${currentBest.isNew ? "@everyone \nNew Best " : "Best "} ${collection} ${getCatsLink(currentBest)}\n`;
+    catsMsg += getFloorPriceTxt(floorPrice, lastDayFloor, lastWeekFloor);
+    // eslint-disable-next-line prettier/prettier
+    catsMsg += `Hourly Sales ${hourlySales?.toFixed(2) || "?"} | Avg Sale ${averageSalePrice?.toFixed(2) || "?"}\n\n`;
+    currentListings.forEach((listing) => {
       catsMsg += `${getCatsLink(listing)}\n`;
     });
 
@@ -125,6 +221,7 @@ class CronBot {
 
     this.sendDegodsMessage(channelIds[0]);
     this.sendJungleCatsMessage(channelIds[1]);
+    this.sendRogueSharksMessage(channelIds[2]);
   }
 
   private _applyPolicyToList(
