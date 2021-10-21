@@ -2,28 +2,15 @@ import { CronJob } from "cron";
 import rest from "../rest";
 import Moment from "moment";
 import { Client, Snowflake, TextChannel, Webhook } from "discord.js";
+import { Config, Rule, CollectionTrackerResp, MarketListing } from "../types";
 import {
-  Config,
-  CronRuleItem,
-  Policy,
-  Rule,
-  CollectionTrackerResp,
-  MarketListing,
-} from "../types";
-import {
-  getTopAttrsTxt,
+  buildMessage,
+  getMarketListings,
   getBestRankTxt,
-  getSuggestedPriceTxt,
   getFloorPriceTxt,
+  shouldBroadcast,
 } from "../helpers";
 import config from "../config.json";
-
-const getRandomInt = (min: number, max: number): number => {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-
-  return Math.floor(Math.random() * (max - min) + min);
-};
 
 class CronBot {
   client: Client;
@@ -37,6 +24,7 @@ class CronBot {
     this.rule = rule;
   }
 
+  // legacy degods implementation from alpha art
   async sendDegodsMessage(channelId: string): Promise<void> {
     console.log(
       `sending degods msg to channel ${channelId} @ ${Moment().format()}`
@@ -96,60 +84,14 @@ class CronBot {
       `sending rogue sharks msg to channel ${channelId} @ ${Moment().format()}`
     );
 
-    let collectionData: CollectionTrackerResp;
-    try {
-      collectionData = (await rest.get(
-        "/rogue-sharks"
-      )) as CollectionTrackerResp;
-    } catch (err) {
-      console.log(err);
-      const catsHook = await this._getWebhook(channelId);
-      await catsHook.send("@timchi Error getting Rogue Sharks data!");
-
-      return;
+    const webhook = await this._getWebhook(channelId);
+    const tracker = await getMarketListings("rogue-sharks", webhook);
+    if (!tracker) return;
+    const msg = buildMessage(tracker);
+    if (shouldBroadcast(tracker, this.lastRogueSharksBroadcast)) {
+      await webhook.send(msg);
+      this.lastRogueSharksBroadcast = Moment();
     }
-
-    const {
-      data: {
-        tracker: {
-          collection,
-          currentBest,
-          currentListings,
-          floorPrice,
-          lastDayFloor,
-          lastWeekFloor,
-          hourlySales,
-          averageSalePrice,
-        },
-      },
-    } = collectionData;
-
-    const getRogueSharksLink = (listing: MarketListing): string => {
-      const topAttrs = getTopAttrsTxt(listing);
-      const bestRk = getBestRankTxt(listing);
-      const suggPrice = getSuggestedPriceTxt(listing);
-
-      // eslint-disable-next-line prettier/prettier
-      return `[Score ${listing.score.toFixed(2)} @ ${listing.price.toFixed(2)} ${topAttrs} ${bestRk} ${suggPrice}](<${listing.url}>)`;
-    };
-
-    // eslint-disable-next-line prettier/prettier
-    let sharksMsg = `${currentBest.isNew ? "@everyone \nNew Best " : "Best "} ${collection} ${getRogueSharksLink(currentBest)}\n`;
-    sharksMsg += getFloorPriceTxt(floorPrice, lastDayFloor, lastWeekFloor);
-    // eslint-disable-next-line prettier/prettier
-    sharksMsg += `Hourly Sales ${hourlySales?.toFixed(2) || "?"} | Avg Sale ${averageSalePrice?.toFixed(2) || "?"}\n\n`;
-    currentListings.forEach((listing) => {
-      sharksMsg += `${getRogueSharksLink(listing)}\n`;
-    });
-
-    // eslint-disable-next-line prettier/prettier
-    if ( !currentBest.isNew && !!this.lastRogueSharksBroadcast && this.lastRogueSharksBroadcast.isAfter(Moment().add(-1, "hours"))) {
-      return;
-    }
-
-    const sharksHook = await this._getWebhook(channelId);
-    await sharksHook.send(sharksMsg);
-    this.lastRogueSharksBroadcast = Moment();
   }
 
   async sendJungleCatsMessage(channelId: string): Promise<void> {
@@ -157,90 +99,22 @@ class CronBot {
       `sending jungle cats msg to channel ${channelId} @ ${Moment().format()}`
     );
 
-    let collectionData: CollectionTrackerResp;
-    try {
-      collectionData = (await rest.get(
-        "/jungle-cats"
-      )) as CollectionTrackerResp;
-    } catch (err) {
-      console.log(err);
-      const catsHook = await this._getWebhook(channelId);
-      await catsHook.send("@timchi Error getting Jungle Cats data!");
-
-      return;
+    const webhook = await this._getWebhook(channelId);
+    const tracker = await getMarketListings("jungle-cats", webhook);
+    if (!tracker) return;
+    const msg = buildMessage(tracker);
+    if (shouldBroadcast(tracker, this.lastJungleCatsBroadcast)) {
+      await webhook.send(msg);
+      this.lastJungleCatsBroadcast = Moment();
     }
-
-    const {
-      data: {
-        tracker: {
-          collection,
-          currentBest,
-          currentListings,
-          floorPrice,
-          lastDayFloor,
-          lastWeekFloor,
-          hourlySales,
-          averageSalePrice,
-        },
-      },
-    } = collectionData;
-
-    const getCatsLink = (listing: MarketListing): string => {
-      const topAttrs = getTopAttrsTxt(listing);
-      const bestRk = getBestRankTxt(listing);
-      const suggPrice = getSuggestedPriceTxt(listing);
-
-      // eslint-disable-next-line prettier/prettier
-      return `[Score ${listing.score.toFixed(2)} @ ${listing.price.toFixed(2)} ${topAttrs} ${bestRk} ${suggPrice}](<${listing.url}>)`;
-    };
-
-    // eslint-disable-next-line prettier/prettier
-    let catsMsg = `${currentBest.isNew ? "@everyone \nNew Best " : "Best "} ${collection} ${getCatsLink(currentBest)}\n`;
-    catsMsg += getFloorPriceTxt(floorPrice, lastDayFloor, lastWeekFloor);
-    // eslint-disable-next-line prettier/prettier
-    catsMsg += `Hourly Sales ${hourlySales?.toFixed(2) || "?"} | Avg Sale ${averageSalePrice?.toFixed(2) || "?"}\n\n`;
-    currentListings.forEach((listing) => {
-      catsMsg += `${getCatsLink(listing)}\n`;
-    });
-
-    // eslint-disable-next-line prettier/prettier
-    if ( !currentBest.isNew && !!this.lastJungleCatsBroadcast && this.lastJungleCatsBroadcast.isAfter(Moment().add(-1, "hours"))) {
-      return;
-    }
-
-    const catsHook = await this._getWebhook(channelId);
-    await catsHook.send(catsMsg);
-    this.lastJungleCatsBroadcast = Moment();
   }
 
   async sendMessages(): Promise<void> {
-    const channelIds = this._applyPolicyToList(
-      this.rule.channelPolicy,
-      this.rule.channelIds
-    ) as Snowflake[];
+    const { channelIds } = this.rule;
 
     this.sendDegodsMessage(channelIds[0]);
     this.sendJungleCatsMessage(channelIds[1]);
     this.sendRogueSharksMessage(channelIds[2]);
-  }
-
-  private _applyPolicyToList(
-    policy?: Policy,
-    list?: CronRuleItem[]
-  ): CronRuleItem[] {
-    if (!policy || !list || list.length === 0) {
-      return [];
-    }
-
-    switch (policy) {
-      case "all":
-        return list;
-      case "random":
-        return [list[getRandomInt(0, list.length)]];
-      case "single":
-      default:
-        return [list[0]];
-    }
   }
 
   private async _getWebhook(channelId: Snowflake): Promise<Webhook> {
