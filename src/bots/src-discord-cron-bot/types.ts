@@ -44,7 +44,6 @@ export interface CollectionTracker {
   lastWeekBest: MarketListing;
 
   currentListings: [MarketListing];
-  floors: [FloorPrice];
 }
 
 export interface FloorPrice {
@@ -55,14 +54,15 @@ export interface FloorPrice {
 
 export interface MarketListing {
   id: string;
-  createdAt: string;
+  updatedAt: string;
   title: string;
   image: string;
   url: string;
   collection: string;
   marketplace: string;
-  rank: number;
+  rank: number | undefined;
   price: number;
+  rarity: string | undefined;
   suggestedPrice: number | undefined;
   marketFloor: number | undefined;
   score: number;

@@ -11,7 +11,8 @@ import Moment from "moment";
 export const getTopAttrsTxt = (listing: MarketListing): string => {
   let topAttrs =
     listing.topAttributes?.map((attr) => attr.value).join(", ") || "";
-  if (topAttrs) topAttrs = `(${topAttrs})`;
+  const rarity = listing.rarity ? `${listing.rarity}: ` : "";
+  if (topAttrs) topAttrs = `${rarity}(${topAttrs})`;
 
   return topAttrs;
 };
@@ -50,14 +51,17 @@ export const getListingLink = (listing: MarketListing): string => {
   const topAttrs = getTopAttrsTxt(listing);
   const bestRk = getBestRankTxt(listing);
   const suggPrice = getSuggestedPriceTxt(listing);
+  let listPrefix = `Score ${listing.score.toFixed(2)}`;
+  if (listing.rank) listPrefix = `Rank ${listing.rank} `;
 
   // eslint-disable-next-line prettier/prettier
-    return `[Score ${listing.score.toFixed(2)} @ ${listing.price.toFixed(2)} ${topAttrs} ${bestRk} ${suggPrice}](<${listing.url}>)`;
+    return `[${listPrefix} @ ${listing.price.toFixed(2)} ${topAttrs} ${bestRk} ${suggPrice}](<${listing.url}>)`;
 };
 
 export const getMarketListings = async (
   collection: string,
-  webhook: any
+  webhook: any,
+  lastBroadCastErr: Moment.Moment | undefined
 ): Promise<CollectionTracker | undefined> => {
   try {
     const collectionData = (await rest.get(
@@ -67,7 +71,9 @@ export const getMarketListings = async (
     return collectionData.data.tracker;
   } catch (err) {
     console.log(err);
-    await webhook.send(`@timchi Error getting ${collection} data!`);
+    if (shouldBroadcastErr(lastBroadCastErr)) {
+      await webhook.send(`@timchi#0831 Error getting ${collection} data!`);
+    }
 
     return undefined;
   }
@@ -106,6 +112,15 @@ export const shouldBroadcast = (
     !!lastBroadCast &&
     lastBroadCast.isAfter(Moment().add(-1, "hours"))
   ) {
+    return false;
+  }
+  return true;
+};
+
+const shouldBroadcastErr = (
+  lastBroadCast: Moment.Moment | undefined
+): boolean => {
+  if (!!lastBroadCast && lastBroadCast.isAfter(Moment().add(-2, "hours"))) {
     return false;
   }
   return true;

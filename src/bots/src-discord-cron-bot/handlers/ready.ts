@@ -16,8 +16,15 @@ class CronBot {
   client: Client;
   rule: Rule;
   lastDegodsBroadcast: Moment.Moment | undefined;
+  lastDegodsErrBroadcast: Moment.Moment | undefined;
   lastJungleCatsBroadcast: Moment.Moment | undefined;
+  lastJungleCatsErrBroadcast: Moment.Moment | undefined;
   lastRogueSharksBroadcast: Moment.Moment | undefined;
+  lastRogueSharksErrBroadcast: Moment.Moment | undefined;
+  lastMeerkatsBroadcast: Moment.Moment | undefined;
+  lastMeerkatsErrBroadcast: Moment.Moment | undefined;
+  lastFamousFoxBroadcast: Moment.Moment | undefined;
+  lastFamousFoxErrBroadcast: Moment.Moment | undefined;
 
   constructor(client: Client, rule: Rule) {
     this.client = client;
@@ -58,7 +65,7 @@ class CronBot {
       const bestRk = getBestRankTxt(listing);
 
       // eslint-disable-next-line prettier/prettier
-      return `[Rank ${listing.rank.toFixed(0)} | Score ${listing.score.toFixed(2)} @ ${listing.price.toFixed(2)} ${bestRk}](<${listing.url}>)`;
+      return `[Rank ${listing.rank?.toFixed(0)} | Score ${listing.score.toFixed(2)} @ ${listing.price.toFixed(2)} ${bestRk}](<${listing.url}>)`;
     };
 
     // eslint-disable-next-line prettier/prettier
@@ -85,8 +92,15 @@ class CronBot {
     );
 
     const webhook = await this._getWebhook(channelId);
-    const tracker = await getMarketListings("rogue-sharks", webhook);
-    if (!tracker) return;
+    const tracker = await getMarketListings(
+      "rogue-sharks",
+      webhook,
+      this.lastRogueSharksErrBroadcast
+    );
+    if (!tracker) {
+      this.lastRogueSharksErrBroadcast = Moment();
+      return;
+    }
     const msg = buildMessage(tracker);
     if (shouldBroadcast(tracker, this.lastRogueSharksBroadcast)) {
       await webhook.send(msg);
@@ -100,12 +114,63 @@ class CronBot {
     );
 
     const webhook = await this._getWebhook(channelId);
-    const tracker = await getMarketListings("jungle-cats", webhook);
-    if (!tracker) return;
+    const tracker = await getMarketListings(
+      "jungle-cats",
+      webhook,
+      this.lastJungleCatsErrBroadcast
+    );
+    if (!tracker) {
+      this.lastJungleCatsErrBroadcast = Moment();
+      return;
+    }
     const msg = buildMessage(tracker);
     if (shouldBroadcast(tracker, this.lastJungleCatsBroadcast)) {
       await webhook.send(msg);
       this.lastJungleCatsBroadcast = Moment();
+    }
+  }
+
+  async sendMeerkatsMessage(channelId: string): Promise<void> {
+    console.log(
+      `sending meerkats msg to channel ${channelId} @ ${Moment().format()}`
+    );
+
+    const webhook = await this._getWebhook(channelId);
+    const tracker = await getMarketListings(
+      "meerkat-millionaires-cc",
+      webhook,
+      this.lastMeerkatsErrBroadcast
+    );
+    if (!tracker) {
+      this.lastMeerkatsErrBroadcast = Moment();
+      return;
+    }
+    const msg = buildMessage(tracker);
+    if (shouldBroadcast(tracker, this.lastMeerkatsBroadcast)) {
+      await webhook.send(msg);
+      this.lastMeerkatsBroadcast = Moment();
+    }
+  }
+
+  async sendFamousFoxMessage(channelId: string): Promise<void> {
+    console.log(
+      `sending famous fox msg to channel ${channelId} @ ${Moment().format()}`
+    );
+
+    const webhook = await this._getWebhook(channelId);
+    const tracker = await getMarketListings(
+      "famous-fox-federation",
+      webhook,
+      this.lastFamousFoxErrBroadcast
+    );
+    if (!tracker) {
+      this.lastFamousFoxErrBroadcast = Moment();
+      return;
+    }
+    const msg = buildMessage(tracker);
+    if (shouldBroadcast(tracker, this.lastFamousFoxBroadcast)) {
+      await webhook.send(msg);
+      this.lastFamousFoxBroadcast = Moment();
     }
   }
 
@@ -115,6 +180,8 @@ class CronBot {
     this.sendDegodsMessage(channelIds[0]);
     this.sendJungleCatsMessage(channelIds[1]);
     this.sendRogueSharksMessage(channelIds[2]);
+    this.sendMeerkatsMessage(channelIds[3]);
+    this.sendFamousFoxMessage(channelIds[4]);
   }
 
   private async _getWebhook(channelId: Snowflake): Promise<Webhook> {
