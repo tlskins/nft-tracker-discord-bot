@@ -38,6 +38,7 @@ export interface CollectionTracker {
   lastUpdated: string;
   hourlySales: number | undefined;
   averageSalePrice: number | undefined;
+  salesVolume: number | undefined;
 
   currentBest: MarketListing;
   lastDayBest: MarketListing;
@@ -58,6 +59,8 @@ export interface MarketListing {
   title: string;
   image: string;
   url: string;
+  tokenAddress: string;
+  tokenNumber: string;
   collection: string;
   marketplace: string;
   rank: number | undefined;
@@ -65,13 +68,16 @@ export interface MarketListing {
   rarity: string | undefined;
   suggestedPrice: number | undefined;
   marketFloor: number | undefined;
+  lastSoldPrice: number | undefined;
   score: number;
   scorePercentChange: number | undefined;
   listedForSale: boolean;
   isNew: boolean;
+  isBest: boolean;
   dailyBestScoreRank: number | undefined;
   weeklyBestScoreRank: number | undefined;
 
+  attributes: [TokenAttributes] | undefined;
   topAttributes: [TokenAttributes] | undefined;
 }
 
@@ -79,4 +85,5 @@ export interface TokenAttributes {
   name: string;
   value: string;
   score: number;
+  rarity: string;
 }

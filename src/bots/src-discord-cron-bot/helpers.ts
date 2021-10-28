@@ -10,8 +10,11 @@ import Moment from "moment";
 
 export const getTopAttrsTxt = (listing: MarketListing): string => {
   let topAttrs =
-    listing.topAttributes?.map((attr) => attr.value).join(", ") || "";
-  const rarity = listing.rarity ? `${listing.rarity}: ` : "";
+    listing.topAttributes
+      ?.map((attr) => attr.value)
+      .slice(0, 4)
+      .join(", ") || "";
+  const rarity = listing.rarity ? `Rarity: ${listing.rarity}: ` : "";
   if (topAttrs) topAttrs = `${rarity}(${topAttrs})`;
 
   return topAttrs;
@@ -52,10 +55,15 @@ export const getListingLink = (listing: MarketListing): string => {
   const bestRk = getBestRankTxt(listing);
   const suggPrice = getSuggestedPriceTxt(listing);
   let listPrefix = `Score ${listing.score.toFixed(2)}`;
-  if (listing.rank) listPrefix = `Rank ${listing.rank} `;
+  if (listing.rank) listPrefix += `| Rank ${listing.rank} `;
 
   // eslint-disable-next-line prettier/prettier
-    return `[${listPrefix} @ ${listing.price.toFixed(2)} ${topAttrs} ${bestRk} ${suggPrice}](<${listing.url}>)`;
+    return `[${listPrefix} @ ${listing.price.toFixed(2)} SOL ${topAttrs} ${bestRk} ${suggPrice}](<${listing.url}>)`;
+};
+
+export const getBibleLink = (collection: string, path: string): string => {
+  // eslint-disable-next-line prettier/prettier
+    return `[${collection} Bible Verse](<${`https://degenbible.vercel.app/collections/${path}`}>)`;
 };
 
 export const getMarketListings = async (
@@ -64,7 +72,7 @@ export const getMarketListings = async (
   lastBroadCastErr: Moment.Moment | undefined
 ): Promise<CollectionTracker | undefined> => {
   try {
-    const collectionData = (await rest.get(
+    const collectionData = (await rest.post(
       `/${collection}`
     )) as CollectionTrackerResp;
 
@@ -79,7 +87,10 @@ export const getMarketListings = async (
   }
 };
 
-export const buildMessage = (tracker: CollectionTracker): string => {
+export const buildMessage = (
+  tracker: CollectionTracker,
+  path: string
+): string => {
   const {
     collection,
     currentBest,
@@ -92,13 +103,14 @@ export const buildMessage = (tracker: CollectionTracker): string => {
   } = tracker;
 
   // eslint-disable-next-line prettier/prettier
-let msg = `${currentBest.isNew ? "@everyone \nNew Best " : "Best "} ${collection} ${getListingLink(currentBest)}\n`;
+let msg = `${currentBest.isNew ? "@everyone \nNew Best " : "Best "}${collection} ${getListingLink(currentBest)}\n`;
   msg += getFloorPriceTxt(floorPrice, lastDayFloor, lastWeekFloor);
   // eslint-disable-next-line prettier/prettier
-  msg += `Hourly Sales ${hourlySales?.toFixed(2) || "?"} | Avg Sale ${averageSalePrice?.toFixed(2) || "?"}\n\n`;
+  msg += `Hourly Sales ${hourlySales?.toFixed(2) || "?"} | Avg Sale ${averageSalePrice?.toFixed(2) || "?"}\n`;
+  msg += getBibleLink(currentBest.collection, path) + "\n\n";
   currentListings.forEach((listing) => (msg += `${getListingLink(listing)}\n`));
 
-  return msg;
+  return msg.substring(0, 2000);
 };
 
 export const shouldBroadcast = (

@@ -5,6 +5,7 @@ import { Client, Snowflake, TextChannel, Webhook } from "discord.js";
 import { Config, Rule, CollectionTrackerResp, MarketListing } from "../types";
 import {
   buildMessage,
+  getBibleLink,
   getMarketListings,
   getBestRankTxt,
   getFloorPriceTxt,
@@ -32,58 +33,82 @@ class CronBot {
   }
 
   // legacy degods implementation from alpha art
+  // async sendDegodsMessage(channelId: string): Promise<void> {
+  //   console.log(
+  //     `sending degods msg to channel ${channelId} @ ${Moment().format()}`
+  //   );
+
+  //   let collectionData: CollectionTrackerResp;
+  //   try {
+  //     collectionData = (await rest.post("/degods")) as CollectionTrackerResp;
+  //   } catch (err) {
+  //     console.log(err);
+  //     const degodsHook = await this._getWebhook(channelId);
+  //     await degodsHook.send("@timchi Error getting degods data!");
+
+  //     return;
+  //   }
+
+  //   const {
+  //     data: {
+  //       tracker: {
+  //         collection,
+  //         currentBest,
+  //         currentListings,
+  //         floorPrice,
+  //         lastDayFloor,
+  //         lastWeekFloor,
+  //       },
+  //     },
+  //   } = collectionData;
+
+  //   const getDegodsLink = (listing: MarketListing): string => {
+  //     const bestRk = getBestRankTxt(listing);
+
+  //     // eslint-disable-next-line prettier/prettier
+  //     return `[Rank ${listing.rank?.toFixed(0)} | Score ${listing.score.toFixed(2)} @ ${listing.price.toFixed(2)} ${bestRk}](<${listing.url}>)`;
+  //   };
+
+  //   // eslint-disable-next-line prettier/prettier
+  //   let degodsMsg = `${currentBest.isNew ? "@everyone\nNew Best" : "Best"} ${collection} ${getDegodsLink(currentBest)}\n`;
+  //   degodsMsg += getBibleLink("Degods", "degods") + "\n";
+
+  //   degodsMsg +=
+  //     getFloorPriceTxt(floorPrice, lastDayFloor, lastWeekFloor) + "\n";
+  //   currentListings.forEach((listing) => {
+  //     degodsMsg += `${getDegodsLink(listing)}\n`;
+  //   });
+
+  //   // eslint-disable-next-line prettier/prettier
+  //   if ( !currentBest.isNew && !!this.lastDegodsBroadcast && this.lastDegodsBroadcast.isAfter(Moment().add(-1, "hours"))) {
+  //     return;
+  //   }
+
+  //   const degodsHook = await this._getWebhook(channelId);
+  //   await degodsHook.send(degodsMsg);
+  //   this.lastDegodsBroadcast = Moment();
+  // }
+
   async sendDegodsMessage(channelId: string): Promise<void> {
     console.log(
       `sending degods msg to channel ${channelId} @ ${Moment().format()}`
     );
 
-    let collectionData: CollectionTrackerResp;
-    try {
-      collectionData = (await rest.get("/degods")) as CollectionTrackerResp;
-    } catch (err) {
-      console.log(err);
-      const degodsHook = await this._getWebhook(channelId);
-      await degodsHook.send("@timchi Error getting degods data!");
-
+    const webhook = await this._getWebhook(channelId);
+    const tracker = await getMarketListings(
+      "degods",
+      webhook,
+      this.lastDegodsBroadcast
+    );
+    if (!tracker) {
+      this.lastDegodsErrBroadcast = Moment();
       return;
     }
-
-    const {
-      data: {
-        tracker: {
-          collection,
-          currentBest,
-          currentListings,
-          floorPrice,
-          lastDayFloor,
-          lastWeekFloor,
-        },
-      },
-    } = collectionData;
-
-    const getDegodsLink = (listing: MarketListing): string => {
-      const bestRk = getBestRankTxt(listing);
-
-      // eslint-disable-next-line prettier/prettier
-      return `[Rank ${listing.rank?.toFixed(0)} | Score ${listing.score.toFixed(2)} @ ${listing.price.toFixed(2)} ${bestRk}](<${listing.url}>)`;
-    };
-
-    // eslint-disable-next-line prettier/prettier
-    let degodsMsg = `${currentBest.isNew ? "@everyone\nNew Best" : "Best"} ${collection} ${getDegodsLink(currentBest)}\n`;
-    degodsMsg +=
-      getFloorPriceTxt(floorPrice, lastDayFloor, lastWeekFloor) + "\n";
-    currentListings.forEach((listing) => {
-      degodsMsg += `${getDegodsLink(listing)}\n`;
-    });
-
-    // eslint-disable-next-line prettier/prettier
-    if ( !currentBest.isNew && !!this.lastDegodsBroadcast && this.lastDegodsBroadcast.isAfter(Moment().add(-1, "hours"))) {
-      return;
+    const msg = buildMessage(tracker, "degods");
+    if (shouldBroadcast(tracker, this.lastDegodsBroadcast)) {
+      await webhook.send(msg);
+      this.lastDegodsBroadcast = Moment();
     }
-
-    const degodsHook = await this._getWebhook(channelId);
-    await degodsHook.send(degodsMsg);
-    this.lastDegodsBroadcast = Moment();
   }
 
   async sendRogueSharksMessage(channelId: string): Promise<void> {
@@ -101,7 +126,7 @@ class CronBot {
       this.lastRogueSharksErrBroadcast = Moment();
       return;
     }
-    const msg = buildMessage(tracker);
+    const msg = buildMessage(tracker, "rogue-sharks");
     if (shouldBroadcast(tracker, this.lastRogueSharksBroadcast)) {
       await webhook.send(msg);
       this.lastRogueSharksBroadcast = Moment();
@@ -123,7 +148,7 @@ class CronBot {
       this.lastJungleCatsErrBroadcast = Moment();
       return;
     }
-    const msg = buildMessage(tracker);
+    const msg = buildMessage(tracker, "jungle-cats");
     if (shouldBroadcast(tracker, this.lastJungleCatsBroadcast)) {
       await webhook.send(msg);
       this.lastJungleCatsBroadcast = Moment();
@@ -145,7 +170,7 @@ class CronBot {
       this.lastMeerkatsErrBroadcast = Moment();
       return;
     }
-    const msg = buildMessage(tracker);
+    const msg = buildMessage(tracker, "meerkat-millionaires-cc");
     if (shouldBroadcast(tracker, this.lastMeerkatsBroadcast)) {
       await webhook.send(msg);
       this.lastMeerkatsBroadcast = Moment();
@@ -167,7 +192,7 @@ class CronBot {
       this.lastFamousFoxErrBroadcast = Moment();
       return;
     }
-    const msg = buildMessage(tracker);
+    const msg = buildMessage(tracker, "famous-fox-federation");
     if (shouldBroadcast(tracker, this.lastFamousFoxBroadcast)) {
       await webhook.send(msg);
       this.lastFamousFoxBroadcast = Moment();
@@ -180,7 +205,7 @@ class CronBot {
     this.sendDegodsMessage(channelIds[0]);
     this.sendJungleCatsMessage(channelIds[1]);
     this.sendRogueSharksMessage(channelIds[2]);
-    this.sendMeerkatsMessage(channelIds[3]);
+    // this.sendMeerkatsMessage(channelIds[3]);
     this.sendFamousFoxMessage(channelIds[4]);
   }
 
