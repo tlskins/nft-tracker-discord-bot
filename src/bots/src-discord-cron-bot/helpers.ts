@@ -67,10 +67,8 @@ export const getBibleLink = (collection: string, path: string): string => {
 };
 
 export const getMarketListings = async (
-  collection: string,
-  webhook: any,
-  lastBroadCastErr: Moment.Moment | undefined
-): Promise<CollectionTracker | undefined> => {
+  collection: string
+): Promise<CollectionTracker | Error> => {
   try {
     const collectionData = (await rest.post(
       `/${collection}`
@@ -78,12 +76,7 @@ export const getMarketListings = async (
 
     return collectionData.data.tracker;
   } catch (err) {
-    console.log(err);
-    if (shouldBroadcastErr(lastBroadCastErr)) {
-      await webhook.send(`@timchi#0831 Error getting ${collection} data!`);
-    }
-
-    return undefined;
+    return err as Error;
   }
 };
 
@@ -129,7 +122,7 @@ export const shouldBroadcast = (
   return true;
 };
 
-const shouldBroadcastErr = (
+export const shouldBroadcastErr = (
   lastBroadCast: Moment.Moment | undefined
 ): boolean => {
   if (!!lastBroadCast && lastBroadCast.isAfter(Moment().add(-2, "hours"))) {

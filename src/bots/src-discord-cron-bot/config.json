@@ -6,19 +6,9 @@
       "channelPolicy": "all",
       "messagePolicy": "all",
       "reactionPolicy": "single",
-      "channelIds": [
-        "899854181039476767",
-        "900213683161022504",
-        "900534457730228285",
-        "900934452019081217",
-        "900967049365434419"
-      ],
-      "messages": [
-        {
-          "content": "hourly reminder to hydrate!"
-        }
-      ],
-      "reactions": ["🥤"]
+      "channelIds": [],
+      "messages": [],
+      "reactions": []
     }
   ]
 }
