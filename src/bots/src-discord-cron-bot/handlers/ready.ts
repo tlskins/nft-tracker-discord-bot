@@ -68,6 +68,19 @@ class CronBot {
       process.env.API_PATH_GRIM_SYNDICATE as string,
       process.env.CHANNEL_GRIM_SYNDICATE as string
     );
+    this.handleMessage(
+      process.env.API_PATH_SOLSTEADS as string,
+      process.env.CHANNEL_SOLSTEADS as string
+    );
+    this.handleMessage(
+      process.env.API_PATH_AURORY as string,
+      process.env.CHANNEL_AURORY as string
+    );
+    this.handleMessage(
+      process.env.API_PATH_PESKY_PENGUINS as string,
+      process.env.CHANNEL_PESKY_PENGUINS as string
+    );
+
     // this.handleMessage(
     //   process.env.API_PATH_MEERKAT as string,
     //   process.env.CHANNEL_MEERKAT as string
