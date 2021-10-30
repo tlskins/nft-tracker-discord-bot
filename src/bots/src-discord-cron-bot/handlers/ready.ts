@@ -80,11 +80,14 @@ class CronBot {
       process.env.API_PATH_PESKY_PENGUINS as string,
       process.env.CHANNEL_PESKY_PENGUINS as string
     );
-
-    // this.handleMessage(
-    //   process.env.API_PATH_MEERKAT as string,
-    //   process.env.CHANNEL_MEERKAT as string
-    // );
+    this.handleMessage(
+      process.env.API_PATH_MEERKAT as string,
+      process.env.CHANNEL_MEERKAT as string
+    );
+    this.handleMessage(
+      process.env.API_PATH_TURTLES as string,
+      process.env.CHANNEL_TURTLES as string
+    );
   }
 
   private async _getWebhook(channelId: Snowflake): Promise<Webhook> {
