@@ -1,6 +1,5 @@
 import {
   MarketListing,
-  FloorPrice,
   CollectionTrackerResp,
   CollectionTracker,
 } from "./types";
@@ -42,12 +41,13 @@ export const getSuggestedPriceTxt = (listing: MarketListing): string => {
 };
 
 export const getFloorPriceTxt = (
-  floorPrice: FloorPrice,
-  lastDayFloor: FloorPrice,
-  lastWeekFloor: FloorPrice
+  floorPrice: number,
+  floorChange: number,
+  lastDayFloor: number,
+  lastWeekFloor: number
 ): string => {
   // eslint-disable-next-line prettier/prettier
-  return `Floors: Now ${floorPrice.floorPrice.toFixed(2)} ${floorPrice.percentChange ? `%${floorPrice.percentChange.toFixed(2)}` : ""} | Day ${lastDayFloor.floorPrice.toFixed(2)} | Week ${lastWeekFloor.floorPrice.toFixed(2)}\n`;
+  return `Floors: Now ${floorPrice.toFixed(2)} ${floorChange ? `%${floorChange.toFixed(0)}` : ""} | Day ${lastDayFloor.toFixed(2)} | Week ${lastWeekFloor.toFixed(2)}\n`;
 };
 
 export const getListingLink = (listing: MarketListing): string => {
@@ -88,18 +88,29 @@ export const buildMessage = (
     collection,
     currentBest,
     currentListings,
-    floorPrice,
-    lastDayFloor,
-    lastWeekFloor,
-    hourlySales,
-    averageSalePrice,
+    marketSummary: {
+      hourMarketSummary: { listingFloor: floorPrice, listingFloorChange },
+      dayMarketSummary: {
+        listingFloor: lastDayFloor,
+        totalSales,
+        avgSalePrice,
+      },
+      weekMarketSummary: { listingFloor: lastWeekFloor },
+    },
   } = tracker;
+
+  const hourlySales = totalSales / 12;
 
   // eslint-disable-next-line prettier/prettier
 let msg = `${currentBest.isNew ? "@everyone \nNew Best " : "Best "}${collection} ${getListingLink(currentBest)}\n`;
-  msg += getFloorPriceTxt(floorPrice, lastDayFloor, lastWeekFloor);
+  msg += getFloorPriceTxt(
+    floorPrice,
+    listingFloorChange,
+    lastDayFloor,
+    lastWeekFloor
+  );
   // eslint-disable-next-line prettier/prettier
-  msg += `Hourly Sales ${hourlySales?.toFixed(2) || "?"} | Avg Sale ${averageSalePrice?.toFixed(2) || "?"}\n`;
+  msg += `Hourly Sales ${hourlySales?.toFixed(2) || "?"} | Avg Sale ${avgSalePrice?.toFixed(2) || "?"}\n`;
   msg += getBibleLink(currentBest.collection, path) + "\n\n";
   currentListings.forEach((listing) => (msg += `${getListingLink(listing)}\n`));
 

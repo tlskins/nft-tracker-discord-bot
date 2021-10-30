@@ -32,25 +32,51 @@ export interface CollectionTrackerData {
 export interface CollectionTracker {
   id: string;
   collection: string;
-  floorPrice: FloorPrice;
-  lastDayFloor: FloorPrice;
-  lastWeekFloor: FloorPrice;
   lastUpdated: string;
-  hourlySales: number | undefined;
-  averageSalePrice: number | undefined;
-  salesVolume: number | undefined;
+  marketSummary: MarketSummary;
 
   currentBest: MarketListing;
   lastDayBest: MarketListing;
   lastWeekBest: MarketListing;
-
   currentListings: [MarketListing];
 }
 
-export interface FloorPrice {
-  floorPrice: number;
+export interface MarketSummary {
+  id: string;
+  collection: string;
   time: string;
-  percentChange: number | undefined;
+  timeStr: string;
+
+  hourMarketSummary: MarketWindowSummary;
+  dayMarketSummary: MarketWindowSummary;
+  weekMarketSummary: MarketWindowSummary;
+}
+
+export interface MarketWindowSummary {
+  id: string;
+
+  // listing summaries
+  listingFloor: number;
+  avgListPrice: number;
+  totalListings: number;
+
+  // sales summaries
+  salesFloor: number;
+  salesCeiling: number;
+  avgSalePrice: number;
+  totalSales: number;
+  totalSalesVolume: number;
+
+  // deltas
+  listingFloorChange: number;
+  avgListPriceChange: number;
+  totalListingsChange: number;
+
+  salesFloorChange: number;
+  salesCeilingChange: number;
+  avgSalePriceChange: number;
+  totalSalesChange: number;
+  totalSalesVolumeChange: number;
 }
 
 export interface MarketListing {
