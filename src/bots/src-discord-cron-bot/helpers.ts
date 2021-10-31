@@ -5,6 +5,7 @@ import {
 } from "./types";
 import rest from "./rest";
 
+import { MessageEmbed } from "discord.js";
 import Moment from "moment";
 
 export const getTopAttrsTxt = (listing: MarketListing): string => {
@@ -13,8 +14,7 @@ export const getTopAttrsTxt = (listing: MarketListing): string => {
       ?.map((attr) => attr.value)
       .slice(0, 4)
       .join(", ") || "";
-  const rarity = listing.rarity ? `Rarity: ${listing.rarity}: ` : "";
-  if (topAttrs) topAttrs = `${rarity}(${topAttrs})`;
+  if (topAttrs) topAttrs = `(${topAttrs})`;
 
   return topAttrs;
 };
@@ -24,7 +24,7 @@ export const getBestRankTxt = (listing: MarketListing): string => {
     ? `Day#${listing.dailyBestScoreRank}`
     : "";
   const weekBestRk = listing.weeklyBestScoreRank
-    ? `Week#${listing.weeklyBestScoreRank}`
+    ? `Wk#${listing.weeklyBestScoreRank}`
     : "";
   let bestRk = "";
   if (dayBestRk) bestRk += dayBestRk;
@@ -34,10 +34,12 @@ export const getBestRankTxt = (listing: MarketListing): string => {
   return bestRk;
 };
 
+export const getPrice = (listing: MarketListing): string => {
+  return `${listing.price.toFixed(2)} SOL`;
+};
+
 export const getSuggestedPriceTxt = (listing: MarketListing): string => {
-  return listing.suggestedPrice
-    ? `(SuggPrice?${listing.suggestedPrice.toFixed(2)})`
-    : "";
+  return (listing.suggestedPrice || 0.0).toFixed(2);
 };
 
 export const getFloorPriceTxt = (
@@ -50,20 +52,46 @@ export const getFloorPriceTxt = (
   return `Floors: Now ${floorPrice.toFixed(2)} ${floorChange ? `%${floorChange.toFixed(0)}` : ""} | Day ${lastDayFloor.toFixed(2)} | Week ${lastWeekFloor.toFixed(2)}\n`;
 };
 
+export const getShortListing = (listing: MarketListing): string => {
+  const topAttrs = getTopAttrsTxt(listing);
+  const suggPrice = getSuggestedPriceTxt(listing);
+  const prefix = getListingPrefix(listing);
+  const listPrice = getPrice(listing);
+
+  return `${prefix} @ ${listPrice} ${topAttrs} (SUGG ${suggPrice})`;
+};
+
+export const getBestListing = (listing: MarketListing): string => {
+  const topAttrs = getTopAttrsTxt(listing);
+  const bestRk = getBestRankTxt(listing);
+  const suggPrice = getSuggestedPriceTxt(listing);
+  const prefix = getListingPrefix(listing);
+  const listPrice = getPrice(listing);
+
+  return `${prefix} @ ${listPrice} ${topAttrs} ${bestRk} ${suggPrice}`;
+};
+
+export const getListingPrefix = (listing: MarketListing): string => {
+  let listPrefix = `${listing.rarity}`;
+  if (listing.rank) listPrefix += ` | Rank ${listing.rank}`;
+
+  return listPrefix;
+};
+
 export const getListingLink = (listing: MarketListing): string => {
   const topAttrs = getTopAttrsTxt(listing);
   const bestRk = getBestRankTxt(listing);
   const suggPrice = getSuggestedPriceTxt(listing);
-  let listPrefix = `Score ${listing.score.toFixed(2)}`;
-  if (listing.rank) listPrefix += `| Rank ${listing.rank} `;
+  const prefix = getListingPrefix(listing);
+  const listPrice = listing.price.toFixed(2);
 
   // eslint-disable-next-line prettier/prettier
-    return `[${listPrefix} @ ${listing.price.toFixed(2)} SOL ${topAttrs} ${bestRk} ${suggPrice}](<${listing.url}>)`;
+  return `[${prefix} @ ${listPrice} SOL ${topAttrs} ${bestRk} ${suggPrice}](<${listing.url}>)`;
 };
 
 export const getBibleLink = (collection: string, path: string): string => {
   // eslint-disable-next-line prettier/prettier
-    return `[${collection} Bible Verse](<${`https://degenbible.vercel.app/collections/${path}`}>)`;
+  return `[${collection} Bible Verse](<${`https://degenbible.vercel.app/collections/${path}`}>)`;
 };
 
 export const getMarketListings = async (
@@ -80,13 +108,51 @@ export const getMarketListings = async (
   }
 };
 
-export const buildMessage = (
+export const buildBestEmbed = (tracker: CollectionTracker): MessageEmbed => {
+  const { collection, currentBest } = tracker;
+
+  const embed = new MessageEmbed()
+    .setColor("#0099ff")
+    .setTitle(`${collection} Best Listing`)
+    .setURL(currentBest.url)
+    .setAuthor("Degen Bible Bot")
+    .setDescription(
+      `${getListingPrefix(currentBest)} @ ${getPrice(currentBest)}`
+    )
+    .addFields(
+      {
+        name: `Best Listing`,
+        value: `${currentBest.title}`,
+        inline: true,
+      },
+      {
+        name: `Compare Best`,
+        value: getBestRankTxt(currentBest),
+        inline: true,
+      },
+      {
+        name: `Sugg Price`,
+        value: getSuggestedPriceTxt(currentBest),
+        inline: true,
+      },
+      {
+        name: `Top Traits`,
+        value: getTopAttrsTxt(currentBest),
+        inline: true,
+      }
+    )
+    .setImage(currentBest.image)
+    .setTimestamp();
+
+  return embed;
+};
+
+export const buildMarketEmbed = (
   tracker: CollectionTracker,
   path: string
-): string => {
+): MessageEmbed => {
   const {
     collection,
-    currentBest,
     currentListings,
     marketSummary: {
       hourMarketSummary: { listingFloor: floorPrice, listingFloorChange },
@@ -100,21 +166,31 @@ export const buildMessage = (
   } = tracker;
 
   const hourlySales = totalSales / 12;
-
-  // eslint-disable-next-line prettier/prettier
-let msg = `${currentBest.isNew ? "@everyone \nNew Best " : "Best "}${collection} ${getListingLink(currentBest)}\n`;
-  msg += getFloorPriceTxt(
+  const floorStats = getFloorPriceTxt(
     floorPrice,
     listingFloorChange,
     lastDayFloor,
     lastWeekFloor
   );
-  // eslint-disable-next-line prettier/prettier
-  msg += `Hourly Sales ${hourlySales?.toFixed(2) || "?"} | Avg Sale ${avgSalePrice?.toFixed(2) || "?"}\n`;
-  msg += getBibleLink(currentBest.collection, path) + "\n\n";
-  currentListings.forEach((listing) => (msg += `${getListingLink(listing)}\n`));
+  const salesStats = `Hourly Sales ${
+    hourlySales?.toFixed(2) || "?"
+  } | Avg Sale ${avgSalePrice?.toFixed(2) || "?"}`;
+  const description = `${floorStats}\n${salesStats}`;
 
-  return msg.substring(0, 2000);
+  const embed = new MessageEmbed()
+    .setColor("#0099ff")
+    .setTitle(`${collection} Market Summary`)
+    .setURL(`https://degenbible.vercel.app/collections/${path}`)
+    .setAuthor("Degen Bible Bot")
+    .setDescription(description)
+    .addField("Sales", salesStats)
+    .setTimestamp();
+
+  currentListings.forEach((listing) => {
+    embed.addField(getShortListing(listing), listing.url);
+  });
+
+  return embed;
 };
 
 export const shouldBroadcast = (

@@ -3,7 +3,8 @@ import Moment from "moment";
 import { Client, Snowflake, TextChannel, Webhook } from "discord.js";
 import { Config, Rule } from "../types";
 import {
-  buildMessage,
+  buildMarketEmbed,
+  buildBestEmbed,
   getMarketListings,
   shouldBroadcast,
   shouldBroadcastErr,
@@ -40,9 +41,16 @@ class CronBot {
     }
 
     // send msg
-    const msg = buildMessage(tracker, apiColl);
+    const mktEmbed = buildMarketEmbed(tracker, apiColl);
+    const bestEmbed = buildBestEmbed(tracker);
     if (shouldBroadcast(tracker, this.broadcasts.get(apiColl))) {
-      await webhook.send(msg);
+      await webhook.send({
+        content: tracker.currentBest.isNew
+          ? `@here New Best`
+          : "Market Summary",
+        username: "Degen Bible Bot",
+        embeds: [mktEmbed, bestEmbed],
+      });
       this.broadcasts.set(apiColl, Moment());
     }
   }
@@ -64,10 +72,10 @@ class CronBot {
       process.env.API_PATH_FAMOUS_FOX as string,
       process.env.CHANNEL_FAMOUS_FOX as string
     );
-    this.handleMessage(
-      process.env.API_PATH_GRIM_SYNDICATE as string,
-      process.env.CHANNEL_GRIM_SYNDICATE as string
-    );
+    // this.handleMessage(
+    //   process.env.API_PATH_GRIM_SYNDICATE as string,
+    //   process.env.CHANNEL_GRIM_SYNDICATE as string
+    // );
     this.handleMessage(
       process.env.API_PATH_SOLSTEADS as string,
       process.env.CHANNEL_SOLSTEADS as string
@@ -76,10 +84,10 @@ class CronBot {
       process.env.API_PATH_AURORY as string,
       process.env.CHANNEL_AURORY as string
     );
-    this.handleMessage(
-      process.env.API_PATH_PESKY_PENGUINS as string,
-      process.env.CHANNEL_PESKY_PENGUINS as string
-    );
+    // this.handleMessage(
+    //   process.env.API_PATH_PESKY_PENGUINS as string,
+    //   process.env.CHANNEL_PESKY_PENGUINS as string
+    // );
     this.handleMessage(
       process.env.API_PATH_MEERKAT as string,
       process.env.CHANNEL_MEERKAT as string
