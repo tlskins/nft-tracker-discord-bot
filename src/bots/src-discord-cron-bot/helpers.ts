@@ -49,7 +49,7 @@ export const getFloorPriceTxt = (
   lastWeekFloor: number
 ): string => {
   // eslint-disable-next-line prettier/prettier
-  return `Floors: Now ${floorPrice.toFixed(2)} ${floorChange ? `%${floorChange.toFixed(0)}` : ""} | Day ${lastDayFloor.toFixed(2)} | Week ${lastWeekFloor.toFixed(2)}\n`;
+  return `Floors: Now ${floorPrice.toFixed(2)} ${floorChange ? `${floorChange > 0 ? "+" : "-"}%${floorChange.toFixed(0)}` : ""} | Day ${lastDayFloor.toFixed(2)} | Week ${lastWeekFloor.toFixed(2)}\n`;
 };
 
 export const getShortListing = (listing: MarketListing): string => {
@@ -89,9 +89,8 @@ export const getListingLink = (listing: MarketListing): string => {
   return `[${prefix} @ ${listPrice} SOL ${topAttrs} ${bestRk} ${suggPrice}](<${listing.url}>)`;
 };
 
-export const getBibleLink = (collection: string, path: string): string => {
-  // eslint-disable-next-line prettier/prettier
-  return `[${collection} Bible Verse](<${`https://degenbible.vercel.app/collections/${path}`}>)`;
+export const getBibleLink = (path: string): string => {
+  return `https://degenbible.vercel.app/collections/${path}`;
 };
 
 export const getMarketListings = async (
@@ -108,7 +107,10 @@ export const getMarketListings = async (
   }
 };
 
-export const buildBestEmbed = (tracker: CollectionTracker): MessageEmbed => {
+export const buildBestEmbed = (
+  tracker: CollectionTracker,
+  path: string
+): MessageEmbed => {
   const { collection, currentBest } = tracker;
 
   const embed = new MessageEmbed()
@@ -120,6 +122,10 @@ export const buildBestEmbed = (tracker: CollectionTracker): MessageEmbed => {
       `${getListingPrefix(currentBest)} @ ${getPrice(currentBest)}`
     )
     .addFields(
+      {
+        name: `Analysis`,
+        value: getBibleLink(path),
+      },
       {
         name: `Best Listing`,
         value: `${currentBest.title}`,
@@ -142,6 +148,7 @@ export const buildBestEmbed = (tracker: CollectionTracker): MessageEmbed => {
       }
     )
     .setImage(currentBest.image)
+    .setFooter(`Listing: ${currentBest.url}`)
     .setTimestamp();
 
   return embed;
@@ -175,15 +182,14 @@ export const buildMarketEmbed = (
   const salesStats = `Hourly Sales ${
     hourlySales?.toFixed(2) || "?"
   } | Avg Sale ${avgSalePrice?.toFixed(2) || "?"}`;
-  const description = `${floorStats}\n${salesStats}`;
+  const description = `${floorStats}\n${salesStats}\n`;
 
   const embed = new MessageEmbed()
     .setColor("#0099ff")
     .setTitle(`${collection} Market Summary`)
-    .setURL(`https://degenbible.vercel.app/collections/${path}`)
+    .setURL(getBibleLink(path))
     .setAuthor("Degen Bible Bot")
     .setDescription(description)
-    .addField("Sales", salesStats)
     .setTimestamp();
 
   currentListings.forEach((listing) => {
@@ -194,16 +200,9 @@ export const buildMarketEmbed = (
 };
 
 export const shouldBroadcast = (
-  tracker: CollectionTracker,
   lastBroadCast: Moment.Moment | undefined
 ): boolean => {
-  const { currentBest } = tracker;
-
-  if (
-    !currentBest.isNew &&
-    !!lastBroadCast &&
-    lastBroadCast.isAfter(Moment().add(-1, "hours"))
-  ) {
+  if (!!lastBroadCast && lastBroadCast.isAfter(Moment().add(-59, "minutes"))) {
     return false;
   }
   return true;
@@ -212,7 +211,7 @@ export const shouldBroadcast = (
 export const shouldBroadcastErr = (
   lastBroadCast: Moment.Moment | undefined
 ): boolean => {
-  if (!!lastBroadCast && lastBroadCast.isAfter(Moment().add(-2, "hours"))) {
+  if (!!lastBroadCast && lastBroadCast.isAfter(Moment().add(-119, "minutes"))) {
     return false;
   }
   return true;

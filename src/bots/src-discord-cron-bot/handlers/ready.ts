@@ -1,6 +1,6 @@
 import { CronJob } from "cron";
 import Moment from "moment";
-import { Client, Snowflake, TextChannel, Webhook } from "discord.js";
+import { Client, Snowflake, TextChannel, Webhook, Message } from "discord.js";
 import { Config, Rule } from "../types";
 import {
   buildMarketEmbed,
@@ -15,11 +15,15 @@ class CronBot {
   client: Client;
   rule: Rule;
   broadcasts: Map<string, Moment.Moment>;
+  pinnedMsgIds: Map<string, string>;
+  hooks: Map<string, Webhook>;
 
   constructor(client: Client, rule: Rule) {
     this.client = client;
     this.rule = rule;
     this.broadcasts = new Map();
+    this.pinnedMsgIds = new Map();
+    this.hooks = new Map();
   }
 
   async handleMessage(apiColl: string, channelId: string): Promise<void> {
@@ -28,7 +32,13 @@ class CronBot {
     );
 
     const errBroadcastKey = apiColl + "-err";
-    const webhook = await this._getWebhook(channelId);
+
+    // use same webhook for each channel
+    let webhook = this.hooks.get(apiColl);
+    if (!webhook) {
+      webhook = await this._getWebhook(channelId);
+      this.hooks.set(apiColl, webhook);
+    }
 
     // get data
     const tracker = await getMarketListings(apiColl);
@@ -40,18 +50,44 @@ class CronBot {
       return;
     }
 
-    // send msg
-    const mktEmbed = buildMarketEmbed(tracker, apiColl);
-    const bestEmbed = buildBestEmbed(tracker);
-    if (shouldBroadcast(tracker, this.broadcasts.get(apiColl))) {
+    // broadcast best
+    if (tracker.currentBest.isNew) {
+      const bestEmbed = buildBestEmbed(tracker, apiColl);
       await webhook.send({
-        content: tracker.currentBest.isNew
-          ? `@here New Best`
-          : "Market Summary",
+        content: "@here New Best",
         username: "Degen Bible Bot",
-        embeds: [mktEmbed, bestEmbed],
+        embeds: [bestEmbed],
       });
       this.broadcasts.set(apiColl, Moment());
+    }
+
+    // send / update market msg
+    if (shouldBroadcast(this.broadcasts.get(apiColl))) {
+      const mktEmbed = buildMarketEmbed(tracker, apiColl);
+      const mktMsg = {
+        content: "Market Summary",
+        username: "Degen Bible Bot",
+        embeds: [mktEmbed],
+      };
+
+      await webhook.send(mktMsg);
+      this.broadcasts.set(apiColl, Moment());
+
+      const pinMsgId = this.pinnedMsgIds.get(apiColl);
+      if (pinMsgId) {
+        console.log("updating pin...");
+        await webhook.editMessage(pinMsgId, mktMsg);
+        console.log("updated pin");
+        this.broadcasts.set(apiColl, Moment());
+      } else {
+        const sentMsg = await webhook.send(mktMsg);
+        const msg: Message = (await webhook.fetchMessage(
+          sentMsg.id
+        )) as Message;
+        await msg.pin();
+        this.broadcasts.set(apiColl, Moment());
+        this.pinnedMsgIds.set(apiColl, msg.id);
+      }
     }
   }
 
@@ -72,10 +108,10 @@ class CronBot {
       process.env.API_PATH_FAMOUS_FOX as string,
       process.env.CHANNEL_FAMOUS_FOX as string
     );
-    // this.handleMessage(
-    //   process.env.API_PATH_GRIM_SYNDICATE as string,
-    //   process.env.CHANNEL_GRIM_SYNDICATE as string
-    // );
+    this.handleMessage(
+      process.env.API_PATH_GRIM_SYNDICATE as string,
+      process.env.CHANNEL_GRIM_SYNDICATE as string
+    );
     this.handleMessage(
       process.env.API_PATH_SOLSTEADS as string,
       process.env.CHANNEL_SOLSTEADS as string
@@ -84,10 +120,10 @@ class CronBot {
       process.env.API_PATH_AURORY as string,
       process.env.CHANNEL_AURORY as string
     );
-    // this.handleMessage(
-    //   process.env.API_PATH_PESKY_PENGUINS as string,
-    //   process.env.CHANNEL_PESKY_PENGUINS as string
-    // );
+    this.handleMessage(
+      process.env.API_PATH_PESKY_PENGUINS as string,
+      process.env.CHANNEL_PESKY_PENGUINS as string
+    );
     this.handleMessage(
       process.env.API_PATH_MEERKAT as string,
       process.env.CHANNEL_MEERKAT as string
@@ -96,17 +132,36 @@ class CronBot {
       process.env.API_PATH_TURTLES as string,
       process.env.CHANNEL_TURTLES as string
     );
+    this.handleMessage(
+      process.env.API_PATH_TRIPPY_BUNNY as string,
+      process.env.CHANNEL_TRIPPY_BUNNY as string
+    );
+    this.handleMessage(
+      process.env.API_PATH_BABY_APES as string,
+      process.env.CHANNEL_BABY_APES as string
+    );
+    this.handleMessage(
+      process.env.API_PATH_GALACTIC_GECKOS_SG as string,
+      process.env.CHANNEL_GALACTIC_GECKOS_SG as string
+    );
+    this.handleMessage(
+      process.env.API_PATH_THE_TOWER as string,
+      process.env.CHANNEL_THE_TOWER as string
+    );
+    this.handleMessage(
+      process.env.API_PATH_PIGGY_SOL_GNG as string,
+      process.env.CHANNEL_PIGGY_SOL_GNG as string
+    );
   }
 
   private async _getWebhook(channelId: Snowflake): Promise<Webhook> {
     const channel = (await this.client.channels.fetch(
       channelId
     )) as TextChannel;
-    const webhooks = await channel.fetchWebhooks();
 
-    return !webhooks.size
-      ? channel.createWebhook(this.client.user?.username || "📢")
-      : (webhooks.first() as Webhook);
+    return channel.createWebhook(
+      this.client.user?.username || "Degen Bible Bot"
+    );
   }
 }
 
