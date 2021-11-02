@@ -16,29 +16,20 @@ class CronBot {
   rule: Rule;
   broadcasts: Map<string, Moment.Moment>;
   pinnedMsgIds: Map<string, string>;
-  hooks: Map<string, Webhook>;
 
   constructor(client: Client, rule: Rule) {
     this.client = client;
     this.rule = rule;
     this.broadcasts = new Map();
     this.pinnedMsgIds = new Map();
-    this.hooks = new Map();
   }
 
   async handleMessage(apiColl: string, channelId: string): Promise<void> {
     console.log(
       `sending ${apiColl} msg to channel ${channelId} @ ${Moment().format()}`
     );
-
     const errBroadcastKey = apiColl + "-err";
-
-    // use same webhook for each channel
-    let webhook = this.hooks.get(apiColl);
-    if (!webhook) {
-      webhook = await this._getWebhook(channelId);
-      this.hooks.set(apiColl, webhook);
-    }
+    const webhook = await this._getWebhook(channelId);
 
     // get data
     const tracker = await getMarketListings(apiColl);
@@ -70,24 +61,21 @@ class CronBot {
         embeds: [mktEmbed],
       };
 
-      await webhook.send(mktMsg);
-      this.broadcasts.set(apiColl, Moment());
-
       const pinMsgId = this.pinnedMsgIds.get(apiColl);
       if (pinMsgId) {
-        console.log("updating pin...");
+        console.log(`updating ${apiColl} pin...`);
         await webhook.editMessage(pinMsgId, mktMsg);
-        console.log("updated pin");
-        this.broadcasts.set(apiColl, Moment());
+        console.log(`updated ${apiColl} pin!`);
       } else {
         const sentMsg = await webhook.send(mktMsg);
         const msg: Message = (await webhook.fetchMessage(
           sentMsg.id
         )) as Message;
         await msg.pin();
-        this.broadcasts.set(apiColl, Moment());
         this.pinnedMsgIds.set(apiColl, msg.id);
       }
+
+      this.broadcasts.set(apiColl, Moment());
     }
   }
 
@@ -158,10 +146,11 @@ class CronBot {
     const channel = (await this.client.channels.fetch(
       channelId
     )) as TextChannel;
+    const webhooks = await channel.fetchWebhooks();
 
-    return channel.createWebhook(
-      this.client.user?.username || "Degen Bible Bot"
-    );
+    return !webhooks.size
+      ? channel.createWebhook(this.client.user?.username || "📢")
+      : (webhooks.first() as Webhook);
   }
 }
 

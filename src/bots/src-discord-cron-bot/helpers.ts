@@ -28,7 +28,7 @@ export const getBestRankTxt = (listing: MarketListing): string => {
     : "";
   let bestRk = "";
   if (dayBestRk) bestRk += dayBestRk;
-  if (weekBestRk) bestRk += bestRk ? `|${weekBestRk}` : weekBestRk;
+  if (weekBestRk) bestRk += bestRk ? ` | ${weekBestRk}` : weekBestRk;
   if (bestRk) bestRk = `(${bestRk})`;
 
   return bestRk;
@@ -43,13 +43,19 @@ export const getSuggestedPriceTxt = (listing: MarketListing): string => {
 };
 
 export const getFloorPriceTxt = (
-  floorPrice: number,
-  floorChange: number,
-  lastDayFloor: number,
-  lastWeekFloor: number
+  floorHour: number,
+  floorChgHour: number,
+  floorDay: number,
+  floorChgDay: number,
+  floorWeek: number,
+  floorChgWeek: number
 ): string => {
-  // eslint-disable-next-line prettier/prettier
-  return `Floors: Now ${floorPrice.toFixed(2)} ${floorChange ? `${floorChange > 0 ? "+" : "-"}%${floorChange.toFixed(0)}` : ""} | Day ${lastDayFloor.toFixed(2)} | Week ${lastWeekFloor.toFixed(2)}\n`;
+  const floorStr = (floor: number, chg: number): string =>
+    `${floor} ${chg < 0 ? "-" : "+"}%${Math.abs(chg).toFixed(0)}`;
+  return `Floors: Now ${floorStr(floorHour, floorChgHour)} | Day ${floorStr(
+    floorDay,
+    floorChgDay
+  )} | Week ${floorStr(floorWeek, floorChgWeek)}\n`;
 };
 
 export const getShortListing = (listing: MarketListing): string => {
@@ -59,6 +65,10 @@ export const getShortListing = (listing: MarketListing): string => {
   const listPrice = getPrice(listing);
 
   return `${prefix} @ ${listPrice} ${topAttrs} (SUGG ${suggPrice})`;
+};
+
+export const getShortListingUrl = (listing: MarketListing): string => {
+  return `[${listing.title} Listing](<${listing.url}>)`;
 };
 
 export const getBestListing = (listing: MarketListing): string => {
@@ -162,22 +172,31 @@ export const buildMarketEmbed = (
     collection,
     currentListings,
     marketSummary: {
-      hourMarketSummary: { listingFloor: floorPrice, listingFloorChange },
+      hourMarketSummary: {
+        listingFloor: floorHour,
+        listingFloorChange: floorChgHour,
+      },
       dayMarketSummary: {
-        listingFloor: lastDayFloor,
+        listingFloor: floorDay,
+        listingFloorChange: floorChgDay,
         totalSales,
         avgSalePrice,
       },
-      weekMarketSummary: { listingFloor: lastWeekFloor },
+      weekMarketSummary: {
+        listingFloor: floorWeek,
+        listingFloorChange: floorChgWeek,
+      },
     },
   } = tracker;
 
   const hourlySales = totalSales / 12;
   const floorStats = getFloorPriceTxt(
-    floorPrice,
-    listingFloorChange,
-    lastDayFloor,
-    lastWeekFloor
+    floorHour,
+    floorChgHour,
+    floorDay,
+    floorChgDay,
+    floorWeek,
+    floorChgWeek
   );
   const salesStats = `Hourly Sales ${
     hourlySales?.toFixed(2) || "?"
@@ -193,7 +212,7 @@ export const buildMarketEmbed = (
     .setTimestamp();
 
   currentListings.forEach((listing) => {
-    embed.addField(getShortListing(listing), listing.url);
+    embed.addField(getShortListingUrl(listing), getShortListing(listing));
   });
 
   return embed;
@@ -202,7 +221,7 @@ export const buildMarketEmbed = (
 export const shouldBroadcast = (
   lastBroadCast: Moment.Moment | undefined
 ): boolean => {
-  if (!!lastBroadCast && lastBroadCast.isAfter(Moment().add(-59, "minutes"))) {
+  if (!!lastBroadCast && lastBroadCast.isAfter(Moment().add(-4, "minutes"))) {
     return false;
   }
   return true;
