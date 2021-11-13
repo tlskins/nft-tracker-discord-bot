@@ -2,6 +2,7 @@ import {
   MarketListing,
   CollectionTrackerResp,
   CollectionTracker,
+  MarketSummary,
 } from "./types";
 import rest from "./rest";
 
@@ -42,20 +43,50 @@ export const getSuggestedPriceTxt = (listing: MarketListing): string => {
   return (listing.suggestedPrice || 0.0).toFixed(2);
 };
 
-export const getFloorPriceTxt = (
-  floorHour: number,
-  floorChgHour: number,
-  floorDay: number,
-  floorChgDay: number,
-  floorWeek: number,
-  floorChgWeek: number
-): string => {
-  const floorStr = (floor: number, chg: number): string =>
-    `${floor} ${chg < 0 ? "-" : "+"}%${Math.abs(chg).toFixed(0)}`;
-  return `Floors: Now ${floorStr(floorHour, floorChgHour)} | Day ${floorStr(
-    floorDay,
-    floorChgDay
-  )} | Week ${floorStr(floorWeek, floorChgWeek)}\n`;
+export const getFloorPriceTxt = (mktSum: MarketSummary): string => {
+  const {
+    hourMarketSummary: {
+      listingFloor: floorHour,
+      listingFloorChange: floorChgHour,
+    },
+    dayMarketSummary: {
+      listingFloor: floorDay,
+      listingFloorChange: floorChgDay,
+    },
+    weekMarketSummary: {
+      listingFloor: floorWeek,
+      listingFloorChange: floorChgWeek,
+    },
+  } = mktSum;
+
+  return `Floors: Now ${getNumChgStr(
+    floorHour,
+    floorChgHour
+  )} | Day ${getNumChgStr(floorDay, floorChgDay)} | Week ${getNumChgStr(
+    floorWeek,
+    floorChgWeek
+  )}`;
+};
+
+const getNumChgStr = (num: number, chg: number): string => {
+  return `${num.toFixed(2)} ${chg < 0 ? "-" : "+"}%${Math.abs(chg).toFixed(0)}`;
+};
+
+export const getSalesSumTxt = (mktSum: MarketSummary): string => {
+  const {
+    dayMarketSummary: {
+      totalSales,
+      totalSalesChange,
+      avgSalePrice,
+      avgSalePriceChange,
+    },
+  } = mktSum;
+
+  const hourlySales = totalSales / 12;
+  return `Hourly Sales ${getNumChgStr(
+    hourlySales,
+    totalSalesChange
+  )} | Avg Sale ${getNumChgStr(avgSalePrice, avgSalePriceChange)}`;
 };
 
 export const getShortListing = (listing: MarketListing): string => {
@@ -164,45 +195,19 @@ export const buildBestEmbed = (
   return embed;
 };
 
+export const marketSumStr = (mktSum: MarketSummary): string => {
+  const floorStats = getFloorPriceTxt(mktSum);
+  const salesStats = getSalesSumTxt(mktSum);
+
+  return `${floorStats}\n${salesStats}\n\n`;
+};
+
 export const buildMarketEmbed = (
   tracker: CollectionTracker,
   path: string
 ): MessageEmbed => {
-  const {
-    collection,
-    currentListings,
-    marketSummary: {
-      hourMarketSummary: {
-        listingFloor: floorHour,
-        listingFloorChange: floorChgHour,
-      },
-      dayMarketSummary: {
-        listingFloor: floorDay,
-        listingFloorChange: floorChgDay,
-        totalSales,
-        avgSalePrice,
-      },
-      weekMarketSummary: {
-        listingFloor: floorWeek,
-        listingFloorChange: floorChgWeek,
-      },
-    },
-  } = tracker;
-
-  const hourlySales = totalSales / 12;
-  const floorStats = getFloorPriceTxt(
-    floorHour,
-    floorChgHour,
-    floorDay,
-    floorChgDay,
-    floorWeek,
-    floorChgWeek
-  );
-  const salesStats = `Hourly Sales ${
-    hourlySales?.toFixed(2) || "?"
-  } | Avg Sale ${avgSalePrice?.toFixed(2) || "?"}`;
-  const description = `${floorStats}\n${salesStats}\n`;
-
+  const { collection, currentListings, marketSummary } = tracker;
+  const description = marketSumStr(marketSummary);
   const embed = new MessageEmbed()
     .setColor("#0099ff")
     .setTitle(`${collection} Market Summary`)
@@ -214,6 +219,36 @@ export const buildMarketEmbed = (
   currentListings.forEach((listing) => {
     embed.addField(getShortListingUrl(listing), getShortListing(listing));
   });
+
+  return embed;
+};
+
+export const buildAllMarketsEmbed = (
+  mktSums: (MarketSummary | undefined)[]
+): MessageEmbed | undefined => {
+  const embed = new MessageEmbed()
+    .setColor("#0099ff")
+    .setTitle(`All Market Summary`)
+    .setAuthor("Degen Bible Bot")
+    .setTimestamp();
+
+  mktSums.forEach((mktSum) => {
+    if (
+      Math.abs(mktSum?.dayMarketSummary?.listingFloorChange || 0.0) > 15.0 ||
+      Math.abs(mktSum?.dayMarketSummary.avgSalePriceChange || 0.0) > 25.0
+    ) {
+      if (mktSum) {
+        embed.addField(
+          `${mktSum?.collection} Market Summary`,
+          marketSumStr(mktSum)
+        );
+      }
+    }
+  });
+
+  if (embed.fields.length === 0) {
+    return;
+  }
 
   return embed;
 };
@@ -230,7 +265,7 @@ export const shouldBroadcast = (
 export const shouldBroadcastErr = (
   lastBroadCast: Moment.Moment | undefined
 ): boolean => {
-  if (!!lastBroadCast && lastBroadCast.isAfter(Moment().add(-119, "minutes"))) {
+  if (!!lastBroadCast && lastBroadCast.isAfter(Moment().add(-59, "minutes"))) {
     return false;
   }
   return true;
