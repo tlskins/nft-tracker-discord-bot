@@ -193,6 +193,10 @@ class CronBot {
         process.env.API_PATH_NYAN_HEROES as string,
         process.env.CHANNEL_NYAN_HEROES as string
       ),
+      this.handleMessage(
+        process.env.API_PATH_BABOLEX as string,
+        process.env.CHANNEL_BABOLEX as string
+      ),
     ]);
 
     const mktSums = await promises;
