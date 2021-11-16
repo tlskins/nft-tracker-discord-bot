@@ -272,5 +272,6 @@ export const shouldBroadcastErr = (
 };
 
 export const syncSubscriptions = async (): Promise<void> => {
+  console.log("syncing subscriptions...");
   await rest.post("/subscriptions/sync");
 };

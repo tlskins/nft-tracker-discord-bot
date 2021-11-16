@@ -209,7 +209,7 @@ module.exports = async (client: Client): Promise<void> => {
     const bot = new CronBot(client, rule);
     new CronJob(
       rule.cronExpression,
-      () => bot.sendMessages(),
+      () => bot.handleBot(),
       null,
       true,
       config.timezone
