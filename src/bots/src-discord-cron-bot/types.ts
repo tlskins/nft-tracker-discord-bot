@@ -35,10 +35,22 @@ export interface CollectionTracker {
   lastUpdated: string;
   marketSummary: MarketSummary;
 
+  pinnedMsgId: string;
+  lastBroadcastAt: string;
+  lastErrCastAt: string;
+
   currentBest: MarketListing;
   lastDayBest: MarketListing;
   lastWeekBest: MarketListing;
   currentListings: [MarketListing];
+}
+
+export interface UpdateCollectionTracker {
+  id: string;
+
+  pinnedMsgId?: string;
+  lastBroadcastAt?: string;
+  lastErrCastAt?: string;
 }
 
 export interface MarketSummary {

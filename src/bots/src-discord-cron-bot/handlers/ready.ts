@@ -10,6 +10,7 @@ import {
   shouldBroadcastErr,
   buildAllMarketsEmbed,
   syncSubscriptions,
+  updateTracker,
 } from "../helpers";
 import config from "../config.json";
 
@@ -17,18 +18,31 @@ class CronBot {
   client: Client;
   rule: Rule;
   broadcasts: Map<string, Moment.Moment>;
-  pinnedMsgIds: Map<string, string>;
 
   constructor(client: Client, rule: Rule) {
     this.client = client;
     this.rule = rule;
     this.broadcasts = new Map();
-    this.pinnedMsgIds = new Map();
   }
 
   handleBot(): void {
     this.sendMessages();
     syncSubscriptions();
+  }
+
+  async sendAdminDm(message: string) {
+    const user = await this.client.users.fetch(
+      process.env.ADMIN_USER_ID as string
+    );
+    user.send(message);
+  }
+
+  async sendErrMsg(message: string, castKey: string) {
+    const lastErrCast = this.broadcasts.get(castKey);
+    if (shouldBroadcastErr(lastErrCast)) {
+      await this.sendAdminDm(message);
+      this.broadcasts.set(castKey, Moment());
+    }
   }
 
   async handleMessage(
@@ -38,19 +52,13 @@ class CronBot {
     console.log(
       `sending ${apiColl} msg to channel ${channelId} @ ${Moment().format()}`
     );
-    const errBroadcastKey = apiColl + "-err";
     const webhook = await this._getWebhook(channelId);
+    const errCastKey = apiColl + "-err";
 
     // get data
     const tracker = await getMarketListings(apiColl);
     if (tracker instanceof Error) {
-      if (shouldBroadcastErr(this.broadcasts.get(errBroadcastKey))) {
-        const user = await this.client.users.fetch(
-          process.env.ADMIN_USER_ID as string
-        );
-        user.send(`Error getting ${apiColl} data!`);
-        this.broadcasts.set(errBroadcastKey, Moment());
-      }
+      this.sendErrMsg(`Error getting ${apiColl} data!`, errCastKey);
       return;
     }
 
@@ -62,11 +70,14 @@ class CronBot {
         username: "Degen Bible Bot",
         embeds: [bestEmbed],
       });
-      this.broadcasts.set(apiColl, Moment());
     }
 
+    const lastBroadcastAt = tracker.lastBroadcastAt
+      ? Moment(tracker.lastBroadcastAt)
+      : undefined;
+
     // send / update market msg
-    if (shouldBroadcast(this.broadcasts.get(apiColl))) {
+    if (shouldBroadcast(lastBroadcastAt)) {
       const mktEmbed = buildMarketEmbed(tracker, apiColl);
       const mktMsg = {
         content: "Market Summary",
@@ -74,7 +85,7 @@ class CronBot {
         embeds: [mktEmbed],
       };
 
-      const pinMsgId = this.pinnedMsgIds.get(apiColl);
+      const pinMsgId = tracker.pinnedMsgId;
       if (pinMsgId) {
         console.log(`updating ${apiColl} pin...`);
         await webhook.editMessage(pinMsgId, mktMsg);
@@ -85,10 +96,28 @@ class CronBot {
           sentMsg.id
         )) as Message;
         await msg.pin();
-        this.pinnedMsgIds.set(apiColl, msg.id);
+
+        // update pinned msg id
+        const updatePinResp = await updateTracker(apiColl, {
+          id: tracker.id,
+          pinnedMsgId: msg.id,
+        });
+        if (updatePinResp instanceof Error) {
+          this.sendErrMsg(`Error updating ${apiColl} pin msg!`, errCastKey);
+        }
       }
 
-      this.broadcasts.set(apiColl, Moment());
+      // update last broadcast at
+      const updateTrackerResp = await updateTracker(apiColl, {
+        id: tracker.id,
+        lastBroadcastAt: Moment().format(),
+      });
+      if (updateTrackerResp instanceof Error) {
+        this.sendErrMsg(
+          `Error updating ${apiColl} last broadcast!`,
+          errCastKey
+        );
+      }
     }
 
     return tracker.marketSummary;

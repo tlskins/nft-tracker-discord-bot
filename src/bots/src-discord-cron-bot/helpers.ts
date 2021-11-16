@@ -3,6 +3,7 @@ import {
   CollectionTrackerResp,
   CollectionTracker,
   MarketSummary,
+  UpdateCollectionTracker,
 } from "./types";
 import rest from "./rest";
 
@@ -193,6 +194,22 @@ export const buildBestEmbed = (
     .setTimestamp();
 
   return embed;
+};
+
+export const updateTracker = async (
+  collection: string,
+  req: UpdateCollectionTracker
+): Promise<CollectionTracker | Error> => {
+  try {
+    const collectionData = (await rest.put(
+      `/${collection}`,
+      req
+    )) as CollectionTrackerResp;
+
+    return collectionData.data.tracker;
+  } catch (err) {
+    return err as Error;
+  }
 };
 
 export const marketSumStr = (mktSum: MarketSummary): string => {
