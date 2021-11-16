@@ -9,6 +9,7 @@ import {
   shouldBroadcast,
   shouldBroadcastErr,
   buildAllMarketsEmbed,
+  syncSubscriptions,
 } from "../helpers";
 import config from "../config.json";
 
@@ -23,6 +24,11 @@ class CronBot {
     this.rule = rule;
     this.broadcasts = new Map();
     this.pinnedMsgIds = new Map();
+  }
+
+  handleBot(): void {
+    this.sendMessages();
+    syncSubscriptions();
   }
 
   async handleMessage(

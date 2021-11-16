@@ -270,3 +270,7 @@ export const shouldBroadcastErr = (
   }
   return true;
 };
+
+export const syncSubscriptions = async (): Promise<void> => {
+  await rest.post("/subscriptions/sync");
+};
