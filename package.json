@@ -18,6 +18,7 @@
     "moment": "^2.29.1"
   },
   "devDependencies": {
+    "ansi-regex": "^6.0.1",
     "@tsconfig/recommended": "^1.0.1",
     "@types/cron": "^1.7.3",
     "@types/node": "^16.6.1",
