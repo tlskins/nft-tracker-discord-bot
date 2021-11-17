@@ -39,6 +39,7 @@ class CronBot {
 
   async sendErrMsg(message: string, castKey: string) {
     const lastErrCast = this.broadcasts.get(castKey);
+    console.log(`sending err "${message}" - lastAt ${lastErrCast?.format()}`);
     if (shouldBroadcastErr(lastErrCast)) {
       await this.sendAdminDm(message);
       this.broadcasts.set(castKey, Moment());
@@ -193,10 +194,10 @@ class CronBot {
         process.env.API_PATH_NYAN_HEROES as string,
         process.env.CHANNEL_NYAN_HEROES as string
       ),
-      this.handleMessage(
-        process.env.API_PATH_BABOLEX as string,
-        process.env.CHANNEL_BABOLEX as string
-      ),
+      // this.handleMessage(
+      //   process.env.API_PATH_BABOLEX as string,
+      //   process.env.CHANNEL_BABOLEX as string
+      // ),
     ]);
 
     const mktSums = await promises;
