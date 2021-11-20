@@ -31,10 +31,11 @@ class CronBot {
   }
 
   async sendAdminDm(message: string) {
-    const user = await this.client.users.fetch(
-      process.env.ADMIN_USER_ID as string
-    );
-    user.send(message);
+    // const user = await this.client.users.fetch(
+    //   process.env.ADMIN_USER_ID as string
+    // );
+    // user.send(message);
+    console.log(`Error: ${message}`);
   }
 
   async sendErrMsg(message: string, castKey: string) {
