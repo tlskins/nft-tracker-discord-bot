@@ -1,12 +1,13 @@
 import "dotenv/config";
 import path from "path";
 import { CoreClient } from "discord-bot-core-client";
-const keepAlive = require("./server")
+import { BuildListener, StartListener } from "./listener";
 
 const client = new CoreClient({
-  token: process.env.DISCORD_BOT_TOKEN as string,
+  token: process.env.DISCORD_BOT_TOKEN,
 });
 
-keepAlive()
-
 client.registerBotsIn(path.resolve(__dirname, "bots")).start();
+
+const listener = BuildListener();
+StartListener(listener);
