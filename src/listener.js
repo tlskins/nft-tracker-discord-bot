@@ -61,7 +61,11 @@ export const StartListener = (listener) => {
 
 const startVerification = async (req) => {
   console.log("startVerification...");
-  await rest.put("/users/verify", req);
+  try {
+    await rest.put("/users/verify", req);
+  } catch( err ) {
+    console.log("error getting verification: ", err.response?.data)
+  }
 };
 
 const updateRole = async ({ discordId, isOG }) => {
