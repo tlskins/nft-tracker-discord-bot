@@ -132,7 +132,7 @@ export const getListingLink = (listing: MarketListing): string => {
 };
 
 export const getBibleLink = (path: string): string => {
-  return `https://degenbible.vercel.app/collections/${path}`;
+  return `https://www.degenbible.com/collections/${path}`;
 };
 
 export const buildBestEmbed = (
