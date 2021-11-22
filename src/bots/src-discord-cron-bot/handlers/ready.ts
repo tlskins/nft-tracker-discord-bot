@@ -60,7 +60,10 @@ class CronBot {
     // get data
     const tracker = await getMarketListings(apiColl);
     if (tracker instanceof Error) {
-      this.sendErrMsg(`Error getting ${apiColl} data!`, errCastKey);
+      this.sendErrMsg(
+        `Error getting ${apiColl} data!: ${tracker.response?.data}`,
+        errCastKey
+      );
       return;
     }
 
@@ -105,7 +108,10 @@ class CronBot {
           pinnedMsgId: msg.id,
         });
         if (updatePinResp instanceof Error) {
-          this.sendErrMsg(`Error updating ${apiColl} pin msg!`, errCastKey);
+          this.sendErrMsg(
+            `Error updating ${apiColl} pin msg! ${updatePinResp.response?.data}`,
+            errCastKey
+          );
         }
       }
 
@@ -116,7 +122,7 @@ class CronBot {
       });
       if (updateTrackerResp instanceof Error) {
         this.sendErrMsg(
-          `Error updating ${apiColl} last broadcast!`,
+          `Error updating ${apiColl} last broadcast! ${updateTrackerResp.response?.data}`,
           errCastKey
         );
       }
