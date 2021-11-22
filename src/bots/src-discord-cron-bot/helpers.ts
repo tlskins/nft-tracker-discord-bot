@@ -135,20 +135,6 @@ export const getBibleLink = (path: string): string => {
   return `https://degenbible.vercel.app/collections/${path}`;
 };
 
-export const getMarketListings = async (
-  collection: string
-): Promise<CollectionTracker | Error> => {
-  try {
-    const collectionData = (await rest.post(
-      `/${collection}`
-    )) as CollectionTrackerResp;
-
-    return collectionData.data.tracker;
-  } catch (err) {
-    return err as Error;
-  }
-};
-
 export const buildBestEmbed = (
   tracker: CollectionTracker,
   path: string
@@ -194,22 +180,6 @@ export const buildBestEmbed = (
     .setTimestamp();
 
   return embed;
-};
-
-export const updateTracker = async (
-  collection: string,
-  req: UpdateCollectionTracker
-): Promise<CollectionTracker | Error> => {
-  try {
-    const collectionData = (await rest.put(
-      `/${collection}`,
-      req
-    )) as CollectionTrackerResp;
-
-    return collectionData.data.tracker;
-  } catch (err) {
-    return err as Error;
-  }
 };
 
 export const marketSumStr = (mktSum: MarketSummary): string => {
@@ -288,7 +258,43 @@ export const shouldBroadcastErr = (
   return true;
 };
 
+// controllers
+
+export const getMarketListings = async (
+  collection: string
+): Promise<CollectionTracker | undefined> => {
+  try {
+    const collectionData = (await rest.post(
+      `/${collection}`
+    )) as CollectionTrackerResp;
+
+    return collectionData.data.tracker;
+  } catch (err) {
+    console.log("error getting market listings: ", err.response?.data);
+  }
+};
+
 export const syncSubscriptions = async (): Promise<void> => {
   console.log("syncing subscriptions...");
-  await rest.post("/subscriptions/sync");
+  try {
+    await rest.post("/subscriptions/sync");
+  } catch (err) {
+    console.log("error syncing subs: ", err.response?.data);
+  }
+};
+
+export const updateTracker = async (
+  collection: string,
+  req: UpdateCollectionTracker
+): Promise<CollectionTracker | undefined> => {
+  try {
+    const collectionData = (await rest.put(
+      `/${collection}`,
+      req
+    )) as CollectionTrackerResp;
+
+    return collectionData.data.tracker;
+  } catch (err) {
+    console.log("error updating tracker: ", err.response?.data);
+  }
 };
