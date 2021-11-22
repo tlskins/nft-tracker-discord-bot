@@ -209,8 +209,18 @@ class CronBot {
       const webhook = await this._getWebhook(
         process.env.CHANNEL_MKT_SUMMARY as string
       );
-      const sentMsg = await webhook.send(mktMsg);
-      await webhook.fetchMessage(sentMsg.id);
+
+      // update pin or send to channel
+      const pinMsgId = process.env.MARKETS_PIN_ID;
+      if (pinMsgId) {
+        console.log(`updating markets pin...`);
+        await webhook.editMessage(pinMsgId, mktMsg);
+        console.log(`updated markets pin!`);
+      } else {
+        console.log(`markets pin not found sending to channel...`);
+        const sentMsg = await webhook.send(mktMsg);
+        await webhook.fetchMessage(sentMsg.id);
+      }
       this.broadcasts.set(mktSumKey, Moment());
     }
   }
