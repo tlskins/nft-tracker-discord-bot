@@ -270,7 +270,10 @@ export const getMarketListings = async (
 
     return collectionData.data.tracker;
   } catch (err) {
-    console.log("error getting market listings: ", err.response?.data);
+    console.log(
+      `error getting ${collection} market listings: `,
+      err.response?.data
+    );
   }
 };
 
@@ -295,6 +298,6 @@ export const updateTracker = async (
 
     return collectionData.data.tracker;
   } catch (err) {
-    console.log("error updating tracker: ", err.response?.data);
+    console.log(`error updating ${collection} tracker: `, err.response?.data);
   }
 };
