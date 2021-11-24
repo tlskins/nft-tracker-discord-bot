@@ -261,7 +261,8 @@ export const shouldBroadcastErr = (
 // controllers
 
 export const getMarketListings = async (
-  collection: string
+  collection: string,
+  handleErr: (msg: string) => Promise<void>
 ): Promise<CollectionTracker | undefined> => {
   try {
     const collectionData = (await rest.post(
@@ -270,25 +271,29 @@ export const getMarketListings = async (
 
     return collectionData.data.tracker;
   } catch (err) {
-    console.log(
-      `error getting ${collection} market listings: `,
-      err.response?.data
-    );
+    const errMsg = `error getting ${collection} market listings: ${err.response?.data}`;
+    console.log(errMsg);
+    handleErr(errMsg);
   }
 };
 
-export const syncSubscriptions = async (): Promise<void> => {
+export const syncSubscriptions = async (
+  handleErr: (msg: string) => Promise<void>
+): Promise<void> => {
   console.log("syncing subscriptions...");
   try {
     await rest.post("/subscriptions/sync");
   } catch (err) {
-    console.log("error syncing subs: ", err.response?.data);
+    const errMsg = `error syncing subs: ${err.response?.data}`;
+    console.log(errMsg);
+    handleErr(errMsg);
   }
 };
 
 export const updateTracker = async (
   collection: string,
-  req: UpdateCollectionTracker
+  req: UpdateCollectionTracker,
+  handleErr: (msg: string) => Promise<void>
 ): Promise<CollectionTracker | undefined> => {
   try {
     const collectionData = (await rest.put(
@@ -298,6 +303,8 @@ export const updateTracker = async (
 
     return collectionData.data.tracker;
   } catch (err) {
-    console.log(`error updating ${collection} tracker: `, err.response?.data);
+    const errMsg = `error updating ${collection} tracker: ${err.response?.data}`;
+    console.log(errMsg);
+    handleErr(errMsg);
   }
 };

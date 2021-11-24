@@ -27,25 +27,36 @@ class CronBot {
 
   handleBot(): void {
     this.sendMessages();
-    syncSubscriptions();
+    syncSubscriptions(this.sendErrMsg("sync-subs-err"));
   }
 
   async sendAdminDm(message: string) {
-    // const user = await this.client.users.fetch(
-    //   process.env.ADMIN_USER_ID as string
-    // );
-    // user.send(message);
+    const user = await this.client.users.fetch(
+      process.env.ADMIN_USER_ID as string
+    );
+    user.send(message);
     console.log(`Error: ${message}`);
   }
 
-  async sendErrMsg(message: string, castKey: string) {
+  async postTrackerErr(message: string) {
+    const webhook = await this._getWebhook(
+      process.env.CHANNEL_TRACKER_ERRS as string
+    );
+    await webhook.send({
+      content: message,
+      username: "Degen Bible Bot",
+    });
+    console.log(`Error: ${message}`);
+  }
+
+  sendErrMsg = (castKey: string) => async (message: string) => {
     const lastErrCast = this.broadcasts.get(castKey);
     console.log(`sending err "${message}" - lastAt ${lastErrCast?.format()}`);
     if (shouldBroadcastErr(lastErrCast)) {
-      await this.sendAdminDm(message);
+      this.postTrackerErr(message);
       this.broadcasts.set(castKey, Moment());
     }
-  }
+  };
 
   async handleMessage(
     apiColl: string,
@@ -55,10 +66,12 @@ class CronBot {
       `sending ${apiColl} msg to channel ${channelId} @ ${Moment().format()}`
     );
     const webhook = await this._getWebhook(channelId);
-    const errCastKey = apiColl + "-err";
 
     // get data
-    const tracker = await getMarketListings(apiColl);
+    const tracker = await getMarketListings(
+      apiColl,
+      this.sendErrMsg(apiColl + "-err")
+    );
     if (!tracker) {
       return;
     }
@@ -99,17 +112,25 @@ class CronBot {
         await msg.pin();
 
         // update pinned msg id
-        await updateTracker(apiColl, {
-          id: tracker.id,
-          pinnedMsgId: msg.id,
-        });
+        await updateTracker(
+          apiColl,
+          {
+            id: tracker.id,
+            pinnedMsgId: msg.id,
+          },
+          this.sendErrMsg(apiColl + "-update-err")
+        );
       }
 
       // update last broadcast at
-      await updateTracker(apiColl, {
-        id: tracker.id,
-        lastBroadcastAt: Moment().format(),
-      });
+      await updateTracker(
+        apiColl,
+        {
+          id: tracker.id,
+          lastBroadcastAt: Moment().format(),
+        },
+        this.sendErrMsg(apiColl + "-update-err")
+      );
     }
 
     return tracker.marketSummary;
