@@ -1,13 +1,7 @@
 import { CronJob } from "cron";
 import Moment from "moment";
 import { Client, Snowflake, TextChannel, Webhook, Message } from "discord.js";
-import {
-  Config,
-  CollectionTracker,
-  MarketSummary,
-  Rule,
-  MarketListing,
-} from "../types";
+import { Config, CollectionTracker, Rule } from "../types";
 import {
   buildMarketEmbed,
   buildBestEmbed,
@@ -244,7 +238,7 @@ class CronBot {
     if (
       !!newOvrBest &&
       (!this.lastOvrBest ||
-        newOvrBest.currentBest?.id !== this.lastOvrBest.currentBest?.id)
+        newOvrBest.currentBest?.title !== this.lastOvrBest.currentBest?.title)
     ) {
       const ovrBestHook = await this._getWebhook(
         process.env.CHANNEL_MKT_SUMMARY as string
