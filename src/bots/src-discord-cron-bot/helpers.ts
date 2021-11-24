@@ -271,7 +271,7 @@ export const getMarketListings = async (
 
     return collectionData.data.tracker;
   } catch (err) {
-    const errMsg = `error getting ${collection} market listings: ${err.response?.data}`;
+    const errMsg = `error getting ${collection} market listings: ${err.response?.data?.message}`;
     console.log(errMsg);
     handleErr(errMsg);
   }
@@ -284,7 +284,7 @@ export const syncSubscriptions = async (
   try {
     await rest.post("/subscriptions/sync");
   } catch (err) {
-    const errMsg = `error syncing subs: ${err.response?.data}`;
+    const errMsg = `error syncing subs: ${err.response?.data?.message}`;
     console.log(errMsg);
     handleErr(errMsg);
   }
@@ -303,7 +303,7 @@ export const updateTracker = async (
 
     return collectionData.data.tracker;
   } catch (err) {
-    const errMsg = `error updating ${collection} tracker: ${err.response?.data}`;
+    const errMsg = `error updating ${collection} tracker: ${err.response?.data?.message}`;
     console.log(errMsg);
     handleErr(errMsg);
   }
