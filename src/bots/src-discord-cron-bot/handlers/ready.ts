@@ -227,9 +227,11 @@ class CronBot {
     const mktSumKey = "mktSummaries";
 
     // get overall best listing
+    const skippedColls = ["Nyan Heroes"];
     let newOvrBest = undefined as CollectionTracker | undefined;
     trackers.forEach((tracker) => {
       if (
+        !skippedColls.includes(tracker?.collection || "") &&
         tracker &&
         (!newOvrBest ||
           tracker.currentBest?.score > newOvrBest.currentBest.score)
