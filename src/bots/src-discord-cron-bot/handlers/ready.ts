@@ -249,6 +249,7 @@ class CronBot {
         username: "Degen Bible Bot",
         embeds: [embed],
       });
+      this.lastOvrBest = newOvrBest;
     }
 
     // send / update market msg
