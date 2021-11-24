@@ -244,8 +244,7 @@ class CronBot {
     if (
       !!newOvrBest &&
       (!this.lastOvrBest ||
-        (!!newOvrBest &&
-          newOvrBest.currentBest?.score > this.lastOvrBest.currentBest?.score))
+        newOvrBest.currentBest?.id !== this.lastOvrBest.currentBest?.id)
     ) {
       const ovrBestHook = await this._getWebhook(
         process.env.CHANNEL_MKT_SUMMARY as string
