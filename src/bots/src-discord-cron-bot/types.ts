@@ -43,6 +43,8 @@ export interface CollectionTracker {
   lastDayBest: MarketListing;
   lastWeekBest: MarketListing;
   currentListings: [MarketListing];
+
+  apiColl?: string;
 }
 
 export interface UpdateCollectionTracker {

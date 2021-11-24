@@ -1,7 +1,13 @@
 import { CronJob } from "cron";
 import Moment from "moment";
 import { Client, Snowflake, TextChannel, Webhook, Message } from "discord.js";
-import { Config, MarketSummary, Rule } from "../types";
+import {
+  Config,
+  CollectionTracker,
+  MarketSummary,
+  Rule,
+  MarketListing,
+} from "../types";
 import {
   buildMarketEmbed,
   buildBestEmbed,
@@ -18,6 +24,7 @@ class CronBot {
   client: Client;
   rule: Rule;
   broadcasts: Map<string, Moment.Moment>;
+  lastOvrBest: CollectionTracker | undefined;
 
   constructor(client: Client, rule: Rule) {
     this.client = client;
@@ -61,7 +68,7 @@ class CronBot {
   async handleMessage(
     apiColl: string,
     channelId: string
-  ): Promise<MarketSummary | undefined> {
+  ): Promise<CollectionTracker | undefined> {
     console.log(
       `sending ${apiColl} msg to channel ${channelId} @ ${Moment().format()}`
     );
@@ -133,7 +140,8 @@ class CronBot {
       );
     }
 
-    return tracker.marketSummary;
+    tracker.apiColl = apiColl;
+    return tracker;
   }
 
   async sendMessages(): Promise<void> {
@@ -212,8 +220,41 @@ class CronBot {
       // ),
     ]);
 
-    const mktSums = await promises;
+    const trackers = await promises;
+    const mktSums = trackers
+      .map((tracker) => tracker?.marketSummary)
+      .filter((sum) => !!sum);
     const mktSumKey = "mktSummaries";
+
+    // get overall best listing
+    let newOvrBest = undefined as CollectionTracker | undefined;
+    trackers.forEach((tracker) => {
+      if (
+        tracker &&
+        (!newOvrBest ||
+          tracker.currentBest?.score > newOvrBest.currentBest.score)
+      ) {
+        newOvrBest = tracker;
+      }
+    });
+
+    // if new overall best post to market summary
+    if (
+      !!newOvrBest &&
+      (!this.lastOvrBest ||
+        (!!newOvrBest &&
+          newOvrBest.currentBest?.score > this.lastOvrBest.currentBest?.score))
+    ) {
+      const ovrBestHook = await this._getWebhook(
+        process.env.CHANNEL_MKT_SUMMARY as string
+      );
+      const embed = buildBestEmbed(newOvrBest, newOvrBest?.apiColl || "");
+      await ovrBestHook.send({
+        content: "@here New Overall Best",
+        username: "Degen Bible Bot",
+        embeds: [embed],
+      });
+    }
 
     // send / update market msg
     if (shouldBroadcast(this.broadcasts.get(mktSumKey))) {
