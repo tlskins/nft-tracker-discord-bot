@@ -212,6 +212,10 @@ class CronBot {
       //   process.env.API_PATH_BABOLEX as string,
       //   process.env.CHANNEL_BABOLEX as string
       // ),
+      this.handleMessage(
+        process.env.API_PATH_ANGOMON as string,
+        process.env.CHANNEL_ANGOMON as string
+      ),
     ]);
 
     const trackers = await promises;
