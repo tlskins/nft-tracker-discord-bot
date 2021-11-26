@@ -216,6 +216,10 @@ class CronBot {
         process.env.API_PATH_ANGOMON as string,
         process.env.CHANNEL_ANGOMON as string
       ),
+      this.handleMessage(
+        process.env.API_PATH_BOUNTY_HUNTER_SG as string,
+        process.env.CHANNEL_BOUNTY_HUNTER_SG as string
+      ),
     ]);
 
     const trackers = await promises;
