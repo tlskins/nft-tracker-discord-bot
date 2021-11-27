@@ -83,7 +83,7 @@ const updateRole = async ({ discordId, isOG }) => {
   }
 };
 
-const syncAllMembershipRoles = async ({ discordId, isOG }) => {
+const syncAllMembershipRoles = async () => {
   console.log("sync membership roles...");
   try {
     await rest.post("/subscriptions/sync");
