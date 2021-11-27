@@ -54,6 +54,12 @@ export const StartListener = (listener) => {
     await updateRole({ discordId, isOG })
   });
 
+  // new member
+  listener.on("guildMemberAdd", async (newMember) => {
+    console.log("newMember", newMember);
+    await syncAllMembershipRoles()
+  });
+
   listener.login(process.env.DISCORD_BOT_TOKEN);
 };
 
@@ -74,6 +80,15 @@ const updateRole = async ({ discordId, isOG }) => {
     await rest.put("/subscriptions/sync", { discordId, isOG });
   } catch( err ) {
     console.log("error syncing og role: ", err.response?.data)
+  }
+};
+
+const syncAllMembershipRoles = async ({ discordId, isOG }) => {
+  console.log("sync membership roles...");
+  try {
+    await rest.post("/subscriptions/sync");
+  } catch( err ) {
+    console.log("error sync membership roles: ", err.response?.data)
   }
 };
 
