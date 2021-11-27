@@ -228,6 +228,10 @@ class CronBot {
         process.env.API_PATH_SOL_DROID_BUS as string,
         process.env.CHANNEL_SOL_DROID_BUS as string
       ),
+      this.handleMessage(
+        process.env.API_PATH_SOL_MONKETTE_BUS as string,
+        process.env.CHANNEL_SOL_MONKETTE_BUS as string
+      ),
     ]);
 
     const trackers = await promises;
