@@ -220,6 +220,10 @@ class CronBot {
         process.env.API_PATH_BOUNTY_HUNTER_SG as string,
         process.env.CHANNEL_BOUNTY_HUNTER_SG as string
       ),
+      this.handleMessage(
+        process.env.API_PATH_SOLGODS as string,
+        process.env.CHANNEL_SOLGODS as string
+      ),
     ]);
 
     const trackers = await promises;
