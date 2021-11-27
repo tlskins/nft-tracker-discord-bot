@@ -264,6 +264,7 @@ export const getMarketListings = async (
   collection: string,
   handleErr: (msg: string) => Promise<void>
 ): Promise<CollectionTracker | undefined> => {
+  const startTime = Moment();
   try {
     const collectionData = (await rest.post(
       `/${collection}`
@@ -271,6 +272,10 @@ export const getMarketListings = async (
 
     return collectionData.data.tracker;
   } catch (err) {
+    if (Moment().diff(startTime, "seconds") >= 5.9) {
+      console.log("Request timedout - supressing error broadcast");
+      return;
+    }
     const errMsg = `error getting ${collection} market listings: ${err.response?.data?.message}`;
     console.log(errMsg);
     handleErr(errMsg);
