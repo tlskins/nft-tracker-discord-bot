@@ -236,6 +236,10 @@ class CronBot {
         process.env.API_PATH_NAKED_MEERKATS as string,
         process.env.CHANNEL_NAKED_MEERKATS as string
       ),
+      this.handleMessage(
+        process.env.API_PATH_TAIYO_ROBOTICS as string,
+        process.env.CHANNEL_TAIYO_ROBOTICS as string
+      ),
     ]);
 
     const trackers = await promises;
