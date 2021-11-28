@@ -240,6 +240,10 @@ class CronBot {
         process.env.API_PATH_TAIYO_ROBOTICS as string,
         process.env.CHANNEL_TAIYO_ROBOTICS as string
       ),
+      this.handleMessage(
+        process.env.API_PATH_PORTALS as string,
+        process.env.CHANNEL_PORTALS as string
+      ),
     ]);
 
     const trackers = await promises;
