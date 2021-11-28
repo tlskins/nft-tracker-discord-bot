@@ -248,6 +248,10 @@ class CronBot {
         process.env.API_PATH_FENIX_DANJON as string,
         process.env.CHANNEL_FENIX_DANJON as string
       ),
+      this.handleMessage(
+        process.env.API_PATH_KROOKS as string,
+        process.env.CHANNEL_KROOKS as string
+      ),
     ]);
 
     const trackers = await promises;
