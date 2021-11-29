@@ -81,7 +81,7 @@ class CronBot {
     if (tracker.currentBest.isNew) {
       const bestEmbed = buildBestEmbed(tracker, apiColl);
       await webhook.send({
-        content: "@here New Best",
+        content: "New Best",
         username: "Degen Bible Bot",
         embeds: [bestEmbed],
       });
@@ -285,7 +285,7 @@ class CronBot {
       );
       const embed = buildBestEmbed(newOvrBest, newOvrBest?.apiColl || "");
       await ovrBestHook.send({
-        content: "@here New Overall Best",
+        content: "New Overall Best",
         username: "Degen Bible Bot",
         embeds: [embed],
       });
