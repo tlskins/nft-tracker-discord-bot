@@ -256,6 +256,10 @@ class CronBot {
         process.env.API_PATH_META_DRAGO as string,
         process.env.CHANNEL_META_DRAGO as string
       ),
+      this.handleMessage(
+        process.env.API_PATH_JAMBO_MAMBO as string,
+        process.env.CHANNEL_JAMBO_MAMBO as string
+      ),
     ]);
 
     const trackers = await promises;
