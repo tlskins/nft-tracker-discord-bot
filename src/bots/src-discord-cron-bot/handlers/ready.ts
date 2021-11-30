@@ -250,6 +250,10 @@ class CronBot {
       ),
       this.handleMessage(
         process.env.API_PATH_KROOKS as string,
+        process.env.CHANNEL_META_DRAGO as string
+      ),
+      this.handleMessage(
+        process.env.API_PATH_META_DRAGO as string,
         process.env.CHANNEL_KROOKS as string
       ),
     ]);
