@@ -127,3 +127,63 @@ export interface TokenAttributes {
   score: number;
   rarity: string;
 }
+
+// wallets
+
+export interface GetTokenAlertsResp {
+  data: GetTokenAlertsData;
+}
+
+export interface GetTokenAlertsData {
+  trackers: [ITokenTracker];
+}
+
+export interface ITokenTracker {
+  id: string;
+  lastSync: string;
+  tokenAddress: string;
+  walletAddress: string;
+  userId: string;
+  active: boolean;
+  tokenTrackerType: string;
+  lastAlertAt: string;
+  above: number;
+  below: number;
+
+  token: IToken;
+  discordId: string;
+}
+
+export interface IToken {
+  id: string;
+  updatedAt: string;
+  title: string;
+  image: string;
+  tokenAddress: string;
+  tokenNumber: number;
+  collection: string;
+
+  rank?: number;
+  price?: number;
+  rarity?: string;
+  lastSoldPrice?: number;
+  score?: number;
+  floorPrice?: number;
+  suggestedPrice?: number;
+  lastCalcAt?: string;
+
+  attributes: [TokenAttributes];
+  topAttributes: [TokenAttributes];
+}
+
+export interface IUser {
+  id: string;
+  discordId: string;
+  discordName: string;
+  verified: boolean;
+  isOG: boolean;
+  inactiveDate?: string;
+  trialEnd: string;
+  trackedWallets: [string];
+  hasWalletTracker: boolean;
+}

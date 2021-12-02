@@ -1,17 +1,22 @@
 import { CronJob } from "cron";
 import Moment from "moment";
 import { Client, Snowflake, TextChannel, Webhook, Message } from "discord.js";
-import { Config, CollectionTracker, Rule } from "../types";
+import { Config, CollectionTracker, Rule } from "../../../types";
 import {
   buildMarketEmbed,
   buildBestEmbed,
-  getMarketListings,
   shouldBroadcast,
   shouldBroadcastErr,
   buildAllMarketsEmbed,
+  toTokenAlertMsg,
+} from "./presenters";
+import {
+  getMarketListings,
+  getTokenAlerts,
+  resetTokenAlerts,
   syncSubscriptions,
   updateTracker,
-} from "../helpers";
+} from "../../../api";
 import config from "../config.json";
 
 class CronBot {
@@ -19,6 +24,7 @@ class CronBot {
   rule: Rule;
   broadcasts: Map<string, Moment.Moment>;
   lastOvrBest: CollectionTracker | undefined;
+  lastTokenAlert: Moment.Moment | undefined;
 
   constructor(client: Client, rule: Rule) {
     this.client = client;
@@ -27,17 +33,18 @@ class CronBot {
   }
 
   handleBot(): void {
-    this.sendMessages();
     syncSubscriptions(this.sendErrMsg("sync-subs-err"));
+    this.sendMessages();
+    this.checkTokenAlerts();
   }
 
-  async sendAdminDm(message: string) {
-    const user = await this.client.users.fetch(
-      process.env.ADMIN_USER_ID as string
-    );
+  async sendDm(userId: string, message: string) {
+    const user = await this.client.users.fetch(userId);
     user.send(message);
-    console.log(`Error: ${message}`);
+    console.log(`sentDm: ${userId} ${message}`);
   }
+
+  // error handling
 
   async postTrackerErr(message: string) {
     const webhook = await this._getWebhook(
@@ -58,6 +65,56 @@ class CronBot {
       this.broadcasts.set(castKey, Moment());
     }
   };
+
+  // controllers
+
+  async checkTokenAlerts(): Promise<void> {
+    if (this.lastTokenAlert?.isAfter(Moment().add(-1, "hour"))) {
+      console.log("not yet time to check token alerts...");
+      return;
+    }
+    const tokenAlerts = await getTokenAlerts(this.sendErrMsg("tokenAlertErrs"));
+    if (!tokenAlerts) {
+      console.log("no token alerts");
+      return;
+    }
+
+    // aggregate alerts by user
+    const userAlerts = new Map() as Map<string, string[]>;
+    const discordIds = [] as string[];
+    tokenAlerts.forEach((tokenTracker) => {
+      console.log(`aggregating ${tokenTracker.id}`);
+      const { discordId } = tokenTracker;
+      if (discordId) {
+        const currAlerts = userAlerts.get(discordId);
+        if (currAlerts === undefined) {
+          discordIds.push(discordId);
+        }
+        userAlerts.set(discordId, [
+          ...(currAlerts || []),
+          toTokenAlertMsg(tokenTracker),
+        ]);
+      }
+    });
+
+    // send dms
+    discordIds.forEach((discordId) => {
+      console.log(`sending dm to ${discordId}`);
+      const alertMsgs = userAlerts.get(discordId);
+      if (alertMsgs) {
+        this.sendDm(discordId, alertMsgs?.join("\n"));
+      }
+    });
+
+    // reset alerts
+    await resetTokenAlerts(
+      (tokenAlerts || []).map((a) => a.id),
+      this.sendErrMsg("tokenAlertErrs")
+    );
+
+    // update last broadcast
+    this.lastTokenAlert = Moment();
+  }
 
   async handleMessage(
     apiColl: string,

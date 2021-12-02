@@ -1,11 +1,9 @@
 import {
   MarketListing,
-  CollectionTrackerResp,
   CollectionTracker,
   MarketSummary,
-  UpdateCollectionTracker,
-} from "./types";
-import rest from "./rest";
+  ITokenTracker,
+} from "../../../types";
 
 import { MessageEmbed } from "discord.js";
 import Moment from "moment";
@@ -128,7 +126,7 @@ export const getListingLink = (listing: MarketListing): string => {
   const listPrice = listing.price.toFixed(2);
 
   // eslint-disable-next-line prettier/prettier
-  return `[${prefix} @ ${listPrice} SOL ${topAttrs} ${bestRk} ${suggPrice}](<${listing.url}>)`;
+    return `[${prefix} @ ${listPrice} SOL ${topAttrs} ${bestRk} ${suggPrice}](<${listing.url}>)`;
 };
 
 export const getBibleLink = (path: string): string => {
@@ -258,58 +256,13 @@ export const shouldBroadcastErr = (
   return true;
 };
 
-// controllers
-
-export const getMarketListings = async (
-  collection: string,
-  handleErr: (msg: string) => Promise<void>
-): Promise<CollectionTracker | undefined> => {
-  const startTime = Moment();
-  try {
-    const collectionData = (await rest.post(
-      `/${collection}`
-    )) as CollectionTrackerResp;
-
-    return collectionData.data.tracker;
-  } catch (err) {
-    if (Moment().diff(startTime, "seconds") >= 5.9) {
-      console.log("Request timedout - supressing error broadcast");
-      return;
-    }
-    const errMsg = `error getting ${collection} market listings: ${err.response?.data?.message}`;
-    console.log(errMsg);
-    handleErr(errMsg);
-  }
-};
-
-export const syncSubscriptions = async (
-  handleErr: (msg: string) => Promise<void>
-): Promise<void> => {
-  console.log("syncing subscriptions...");
-  try {
-    await rest.post("/subscriptions/sync");
-  } catch (err) {
-    const errMsg = `error syncing subs: ${err.response?.data?.message}`;
-    console.log(errMsg);
-    handleErr(errMsg);
-  }
-};
-
-export const updateTracker = async (
-  collection: string,
-  req: UpdateCollectionTracker,
-  handleErr: (msg: string) => Promise<void>
-): Promise<CollectionTracker | undefined> => {
-  try {
-    const collectionData = (await rest.put(
-      `/${collection}`,
-      req
-    )) as CollectionTrackerResp;
-
-    return collectionData.data.tracker;
-  } catch (err) {
-    const errMsg = `error updating ${collection} tracker: ${err.response?.data?.message}`;
-    console.log(errMsg);
-    handleErr(errMsg);
-  }
+export const toTokenAlertMsg = (t: ITokenTracker): string => {
+  const trackType = t.tokenTrackerType;
+  const val =
+    trackType === "Floor" ? t.token?.floorPrice : t.token?.suggestedPrice;
+  const compValue = val || 0.0;
+  const comp = compValue > t.above ? "Above" : "Below";
+  return `${t.token?.title} ${trackType} ${comp} ${compValue.toFixed(
+    2
+  )} SOL in Wallet ${t.walletAddress.slice(0, 6)}...`;
 };
