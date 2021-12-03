@@ -258,11 +258,15 @@ export const shouldBroadcastErr = (
 
 export const toTokenAlertMsg = (t: ITokenTracker): string => {
   const trackType = t.tokenTrackerType;
-  const val =
+  const tknVal =
     trackType === "Floor" ? t.token?.floorPrice : t.token?.suggestedPrice;
-  const compValue = val || 0.0;
-  const comp = compValue > t.above ? "Above" : "Below";
-  return `${t.token?.title} ${trackType} ${comp} ${compValue.toFixed(
-    2
-  )} SOL in Wallet ${t.walletAddress.slice(0, 6)}...`;
+  const tokenValue = tknVal?.toFixed(2) || 0.0;
+  let comp = "below";
+  let compValue = t.below?.toFixed(2) || 0.0;
+  if (tokenValue > t.above) {
+    comp = "above";
+    compValue = t.above?.toFixed(2) || 0.0;
+  }
+  const walletAddr = t.walletAddress.slice(0, 6) + "...";
+  return `${t.token?.title} ${trackType} ${tokenValue} ${comp} ${compValue} SOL in Wallet ${walletAddr}`;
 };
