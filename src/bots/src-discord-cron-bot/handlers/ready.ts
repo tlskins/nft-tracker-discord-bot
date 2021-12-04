@@ -321,6 +321,10 @@ class CronBot {
         process.env.API_PATH_TURNT_UP_TIKIS as string,
         process.env.CHANNEL_TURNT_UP_TIKIS as string
       ),
+      this.handleMessage(
+        process.env.API_PATH_RAT_BASTARDS as string,
+        process.env.CHANNEL_RAT_BASTARDS as string
+      ),
     ]);
 
     const trackers = await promises;
