@@ -317,6 +317,10 @@ class CronBot {
         process.env.API_PATH_JAMBO_MAMBO as string,
         process.env.CHANNEL_JAMBO_MAMBO as string
       ),
+      this.handleMessage(
+        process.env.API_PATH_TURNT_UP_TIKIS as string,
+        process.env.CHANNEL_TURNT_UP_TIKIS as string
+      ),
     ]);
 
     const trackers = await promises;
