@@ -1,7 +1,12 @@
 import { CronJob } from "cron";
 import Moment from "moment";
 import { Client, Snowflake, TextChannel, Webhook, Message } from "discord.js";
-import { Config, CollectionTracker, Rule } from "../../../types";
+import {
+  Config,
+  CollectionTracker,
+  Rule,
+  ICollectionMapping,
+} from "../../../types";
 import {
   buildMarketEmbed,
   buildBestEmbed,
@@ -11,6 +16,7 @@ import {
   toTokenAlertMsg,
 } from "./presenters";
 import {
+  getCollectionMappings,
   getMarketListings,
   getTokenAlerts,
   resetTokenAlerts,
@@ -23,6 +29,7 @@ class CronBot {
   client: Client;
   rule: Rule;
   broadcasts: Map<string, Moment.Moment>;
+  collMaps: ICollectionMapping[];
   lastOvrBest: CollectionTracker | undefined;
   lastTokenAlert: Moment.Moment | undefined;
 
@@ -30,6 +37,8 @@ class CronBot {
     this.client = client;
     this.rule = rule;
     this.broadcasts = new Map();
+    this.collMaps = [];
+    this.setCollectionMappings();
   }
 
   handleBot(): void {
@@ -67,6 +76,23 @@ class CronBot {
   };
 
   // controllers
+
+  async setCollectionMappings(): Promise<void> {
+    const collMaps = await getCollectionMappings(
+      this.sendErrMsg("setCollMaps")
+    );
+    if (collMaps) {
+      this.collMaps = collMaps;
+      const count = this.collMaps.length;
+      console.log(
+        `${count} Collection Mappings set. Last: ${
+          this.collMaps[count - 1]?.collection || "?"
+        }`
+      );
+    } else {
+      throw Error("Unable to load collection mappings");
+    }
+  }
 
   async checkTokenAlerts(): Promise<void> {
     if (this.lastTokenAlert?.isAfter(Moment().add(-1, "hour"))) {
@@ -196,136 +222,9 @@ class CronBot {
   }
 
   async sendMessages(): Promise<void> {
-    const promises = Promise.all([
-      this.handleMessage(
-        process.env.API_PATH_DEGODS as string,
-        process.env.CHANNEL_DEGODS as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_JUNGLE_CATS as string,
-        process.env.CHANNEL_JUNGLE_CATS as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_ROGUE_SHARKS as string,
-        process.env.CHANNEL_ROGUE_SHARKS as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_FAMOUS_FOX as string,
-        process.env.CHANNEL_FAMOUS_FOX as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_GRIM_SYNDICATE as string,
-        process.env.CHANNEL_GRIM_SYNDICATE as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_SOLSTEADS as string,
-        process.env.CHANNEL_SOLSTEADS as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_AURORY as string,
-        process.env.CHANNEL_AURORY as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_PESKY_PENGUINS as string,
-        process.env.CHANNEL_PESKY_PENGUINS as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_MEERKAT as string,
-        process.env.CHANNEL_MEERKAT as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_TURTLES as string,
-        process.env.CHANNEL_TURTLES as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_TRIPPY_BUNNY as string,
-        process.env.CHANNEL_TRIPPY_BUNNY as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_BABY_APES as string,
-        process.env.CHANNEL_BABY_APES as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_GALACTIC_GECKOS_SG as string,
-        process.env.CHANNEL_GALACTIC_GECKOS_SG as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_THE_TOWER as string,
-        process.env.CHANNEL_THE_TOWER as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_PIGGY_SOL_GNG as string,
-        process.env.CHANNEL_PIGGY_SOL_GNG as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_DOGE_CAPITAL as string,
-        process.env.CHANNEL_DOGE_CAPITAL as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_NYAN_HEROES as string,
-        process.env.CHANNEL_NYAN_HEROES as string
-      ),
-      // this.handleMessage(
-      //   process.env.API_PATH_BABOLEX as string,
-      //   process.env.CHANNEL_BABOLEX as string
-      // ),
-      this.handleMessage(
-        process.env.API_PATH_ANGOMON as string,
-        process.env.CHANNEL_ANGOMON as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_BOUNTY_HUNTER_SG as string,
-        process.env.CHANNEL_BOUNTY_HUNTER_SG as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_SOLGODS as string,
-        process.env.CHANNEL_SOLGODS as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_SOL_DROID_BUS as string,
-        process.env.CHANNEL_SOL_DROID_BUS as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_SOL_MONKETTE_BUS as string,
-        process.env.CHANNEL_SOL_MONKETTE_BUS as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_NAKED_MEERKATS as string,
-        process.env.CHANNEL_NAKED_MEERKATS as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_TAIYO_ROBOTICS as string,
-        process.env.CHANNEL_TAIYO_ROBOTICS as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_PORTALS as string,
-        process.env.CHANNEL_PORTALS as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_FENIX_DANJON as string,
-        process.env.CHANNEL_FENIX_DANJON as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_KROOKS as string,
-        process.env.CHANNEL_KROOKS as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_META_DRAGO as string,
-        process.env.CHANNEL_META_DRAGO as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_JAMBO_MAMBO as string,
-        process.env.CHANNEL_JAMBO_MAMBO as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_TURNT_UP_TIKIS as string,
-        process.env.CHANNEL_TURNT_UP_TIKIS as string
-      ),
-      this.handleMessage(
-        process.env.API_PATH_RAT_BASTARDS as string,
-        process.env.CHANNEL_RAT_BASTARDS as string
-      ),
-    ]);
+    const promises = Promise.all(
+      this.collMaps.map((map) => this.handleMessage(map.apiPath, map.channelId))
+    );
 
     const trackers = await promises;
     const mktSums = trackers
@@ -334,36 +233,36 @@ class CronBot {
     const mktSumKey = "mktSummaries";
 
     // get overall best listing
-    const skippedColls = [] as string[];
-    let newOvrBest = undefined as CollectionTracker | undefined;
-    trackers.forEach((tracker) => {
-      if (
-        !skippedColls.includes(tracker?.collection || "") &&
-        tracker &&
-        (!newOvrBest ||
-          tracker.currentBest?.score > newOvrBest.currentBest.score)
-      ) {
-        newOvrBest = tracker;
-      }
-    });
+    // const skippedColls = [] as string[];
+    // let newOvrBest = undefined as CollectionTracker | undefined;
+    // trackers.forEach((tracker) => {
+    //   if (
+    //     !skippedColls.includes(tracker?.collection || "") &&
+    //     tracker &&
+    //     (!newOvrBest ||
+    //       tracker.currentBest?.score > newOvrBest.currentBest.score)
+    //   ) {
+    //     newOvrBest = tracker;
+    //   }
+    // });
 
     // if new overall best post to market summary
-    if (
-      !!newOvrBest &&
-      (!this.lastOvrBest ||
-        newOvrBest.currentBest?.title !== this.lastOvrBest.currentBest?.title)
-    ) {
-      const ovrBestHook = await this._getWebhook(
-        process.env.CHANNEL_MKT_SUMMARY as string
-      );
-      const embed = buildBestEmbed(newOvrBest, newOvrBest?.apiColl || "");
-      await ovrBestHook.send({
-        content: "New Overall Best",
-        username: "Degen Bible Bot",
-        embeds: [embed],
-      });
-      this.lastOvrBest = newOvrBest;
-    }
+    // if (
+    //   !!newOvrBest &&
+    //   (!this.lastOvrBest ||
+    //     newOvrBest.currentBest?.title !== this.lastOvrBest.currentBest?.title)
+    // ) {
+    //   const ovrBestHook = await this._getWebhook(
+    //     process.env.CHANNEL_MKT_SUMMARY as string
+    //   );
+    //   const embed = buildBestEmbed(newOvrBest, newOvrBest?.apiColl || "");
+    //   await ovrBestHook.send({
+    //     content: "New Overall Best",
+    //     username: "Degen Bible Bot",
+    //     embeds: [embed],
+    //   });
+    //   this.lastOvrBest = newOvrBest;
+    // }
 
     // send / update market msg
     if (shouldBroadcast(this.broadcasts.get(mktSumKey))) {

@@ -4,10 +4,27 @@ import {
   GetTokenAlertsResp,
   UpdateCollectionTracker,
   ITokenTracker,
+  ILandingResp,
+  ICollectionMapping,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 
 import Moment from "moment";
+
+export const getCollectionMappings = async (
+  handleErr: (msg: string) => Promise<void>
+): Promise<[ICollectionMapping] | undefined> => {
+  console.log("getting collection mappings...");
+  try {
+    const resp: ILandingResp = await rest.get("/landing");
+
+    return resp.data?.collections;
+  } catch (err) {
+    const errMsg = `error getting collection mappings: ${err.response?.data?.message}`;
+    console.log(errMsg);
+    handleErr(errMsg);
+  }
+};
 
 export const getMarketListings = async (
   collection: string,
@@ -22,7 +39,9 @@ export const getMarketListings = async (
     return collectionData.data.tracker;
   } catch (err) {
     if (Moment().diff(startTime, "seconds") >= 5.9) {
-      console.log("Request timedout - supressing error broadcast");
+      console.log(
+        `Request for ${collection} timedout - supressing error broadcast`
+      );
       return;
     }
     const errMsg = `error getting ${collection} market listings: ${err.response?.data?.message}`;

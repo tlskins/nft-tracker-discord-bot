@@ -187,3 +187,28 @@ export interface IUser {
   trackedWallets: [string];
   hasWalletTracker: boolean;
 }
+
+export interface GetTokenAlertsResp {
+  data: GetTokenAlertsData;
+}
+
+export interface GetTokenAlertsData {
+  trackers: [ITokenTracker];
+}
+
+export interface ILandingResp {
+  data: ILandingData;
+}
+
+export interface ILandingData {
+  collections: [ICollectionMapping];
+}
+export interface ICollectionMapping {
+  id: string;
+  collection: string;
+  rankType: string;
+  apiPath: string;
+  channelId: string;
+  totalSupply: number;
+  updateAuthority: string;
+}
