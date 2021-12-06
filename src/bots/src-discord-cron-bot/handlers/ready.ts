@@ -174,6 +174,15 @@ class CronBot {
       ? Moment(tracker.lastBroadcastAt)
       : undefined;
 
+    // seed emojis
+    if (tracker.pinnedMsgId) {
+      const msg: Message = (await webhook.fetchMessage(
+        tracker.pinnedMsgId
+      )) as Message;
+      msg.react("🧹");
+      msg.react("📊");
+    }
+
     // send / update market msg
     if (shouldBroadcast(lastBroadcastAt)) {
       const mktEmbed = buildMarketEmbed(tracker, apiColl);
@@ -188,11 +197,6 @@ class CronBot {
         console.log(`updating ${apiColl} pin...`);
         await webhook.editMessage(pinMsgId, mktMsg);
         console.log(`updated ${apiColl} pin!`);
-
-        // seed emojis
-        const msg: Message = (await webhook.fetchMessage(pinMsgId)) as Message;
-        msg.react("🧹");
-        msg.react("📊");
       } else {
         const sentMsg = await webhook.send(mktMsg);
         const msg: Message = (await webhook.fetchMessage(
