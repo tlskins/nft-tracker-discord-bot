@@ -188,6 +188,11 @@ class CronBot {
         console.log(`updating ${apiColl} pin...`);
         await webhook.editMessage(pinMsgId, mktMsg);
         console.log(`updated ${apiColl} pin!`);
+
+        // seed emojis
+        const msg: Message = (await webhook.fetchMessage(pinMsgId)) as Message;
+        msg.react("🧹");
+        msg.react("📊");
       } else {
         const sentMsg = await webhook.send(mktMsg);
         const msg: Message = (await webhook.fetchMessage(
