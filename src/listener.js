@@ -8,9 +8,11 @@ export const BuildListener = () => {
       Intents.FLAGS.GUILD_MESSAGES,
       Intents.FLAGS.DIRECT_MESSAGES,
       Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
+      Intents.FLAGS.GUILDS,
       Intents.FLAGS.GUILD_MEMBERS,
       Intents.FLAGS.GUILD_MESSAGES,
       Intents.FLAGS.GUILD_PRESENCES,
+      Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
     ],
     partials: ["MESSAGE", "CHANNEL", "REACTION", "USER", "GUILD_MEMBER"],
   });
@@ -26,7 +28,7 @@ export const StartListener = (listener) => {
     console.log("messageCreate ", message);
     if (message.author.bot) return false;
 
-    console.log(`Message from ${message.author.username}: ${message.content}`);
+    // console.log(`Message from ${message.author.username}: ${message.content}`);
 
     if (message.content === "/verify") {
       const verifyCode = generateCode();
@@ -58,6 +60,34 @@ export const StartListener = (listener) => {
   listener.on("guildMemberAdd", async (newMember) => {
     console.log("newMember", newMember);
     await syncAllMembershipRoles()
+  });
+
+  listener.on('messageReactionAdd', async (reaction, user) => {
+    console.log('reaction add')
+    console.log('messageId: ', reaction.message.id)
+    console.log('discordId: ', user.id)
+    console.log('deleted: ', reaction.message.deleted)
+    console.log('emoji: ', reaction._emoji.name)
+
+    if ( reaction.message.id === "913912020062044230" && reaction._emoji.name === "🧹" ) {
+      let server = listener.guilds.cache.get("899854088819314708");
+      let msgUser = server.members.cache.get(user.id);
+      msgUser.roles.add("917252683553996852")
+    }
+  });
+
+  listener.on('messageReactionRemove', async (reaction, user) => {
+    console.log('reaction remove')
+    console.log('messageId: ', reaction.message.id)
+    console.log('discordId: ', user.id)
+    console.log('deleted: ', reaction.message.deleted)
+    console.log('emoji: ', reaction._emoji.name)
+
+    if ( reaction.message.id === "913912020062044230" && reaction._emoji.name === "🧹" ) {
+      let server = listener.guilds.cache.get("899854088819314708");
+      let msgUser = server.members.cache.get(user.id);
+      msgUser.roles.remove("917252683553996852")
+    }
   });
 
   listener.login(process.env.DISCORD_BOT_TOKEN);
