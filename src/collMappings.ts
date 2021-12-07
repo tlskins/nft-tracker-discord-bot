@@ -2,24 +2,30 @@ import { ICollectionMapping } from "./types";
 
 let collMaps = new Map<string, ICollectionMapping>();
 
-export const GetCollMaps = (): Map<string, ICollectionMapping> => collMaps;
+export const GetGlobalCollMaps = (): Map<string, ICollectionMapping> =>
+  collMaps;
 
-export const SetCollMaps = (maps: Map<string, ICollectionMapping>): void => {
+export const GetGlobalCollMap = (id: string): ICollectionMapping | undefined =>
+  collMaps.get(id);
+
+export const SetGlobalCollMaps = (
+  maps: Map<string, ICollectionMapping>
+): void => {
   collMaps = maps;
 };
 
-export const UpdateCollMap = (collMap: ICollectionMapping): void => {
+export const UpdateGlobalCollMap = (collMap: ICollectionMapping): void => {
   collMaps.set(collMap.id, collMap);
 };
 
-export const FindCollMapByPinId = (
+export const FindGlobalCollMapByPin = (
   pinMsgId: string
 ): ICollectionMapping | undefined => {
-  collMaps.forEach((collMap: ICollectionMapping) => {
+  for (const collMap of collMaps.values()) {
     if (collMap.pinMsgId === pinMsgId) {
       return collMap;
     }
-  });
+  }
 
   return undefined;
 };

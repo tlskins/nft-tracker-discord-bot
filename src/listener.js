@@ -2,10 +2,8 @@ import "dotenv/config";
 import rest from "./bots/src-discord-cron-bot/rest";
 const { Client, Intents } = require("discord.js");
 
-import { getCollectionMappings } from "./api";
-import { FindCollMapByPinId } from "./collMappings"
-
-var collMaps = []
+import { updateCollMap } from "./api";
+import { FindGlobalCollMapByPin, GetGlobalCollMap, UpdateGlobalCollMap } from "./collMappings"
 
 export const BuildListener = () => {
   return new Client({
@@ -24,17 +22,12 @@ export const BuildListener = () => {
 };
 
 export const StartListener = async (listener) => {
-  // initializers
-  const collMaps = await getCollectionMappings((msg) => console.log(`Err getting coll maps: ${msg}`))
-  console.log(`${ collMaps.size } Collection Mappings found`);
-
   listener.on("ready", () => {
     console.log(`Logged in as ${listener.user.tag}!`);
   });
 
   // dms for /verify
   listener.on("messageCreate", async (message) => {
-    console.log("messageCreate ", message);
     if (message.author.bot) return false;
 
     if (message.content === "/verify") {
@@ -74,14 +67,20 @@ export const StartListener = async (listener) => {
     console.log('reaction add')
     console.log('messageId: ', reaction.message.id)
     console.log('discordId: ', user.id)
-    console.log('deleted: ', reaction.message.deleted)
     console.log('emoji: ', reaction._emoji.name)
 
-    let collMap = FindCollMapByPinId( reaction.message.id )
+    let collMap = FindGlobalCollMapByPin( reaction.message.id )
     if ( !collMap ) return
+    console.log(`collMap found for ${ collMap.collection }`)
   
     const server = listener.guilds.cache.get(process.env.SERVER_ID);
     const msgUser = server.members.cache.get(user.id);
+
+    // create role if doesnt exist
+    const hasNewRoles = await createCollRoles(server, collMap)
+    if ( hasNewRoles ) collMap = GetGlobalCollMap( collMap.id )
+
+    // add requested role to user
     if ( reaction._emoji.name === "🧹" ) {
       msgUser.roles.add(collMap.floorRole)
     } else if ( reaction._emoji.name === "📊" ) {
@@ -94,14 +93,18 @@ export const StartListener = async (listener) => {
     console.log('reaction remove')
     console.log('messageId: ', reaction.message.id)
     console.log('discordId: ', user.id)
-    console.log('deleted: ', reaction.message.deleted)
     console.log('emoji: ', reaction._emoji.name)
 
-    let collMap = FindCollMapByPinId( reaction.message.id )
+    let collMap = FindGlobalCollMapByPin( reaction.message.id )
     if ( !collMap ) return
 
     const server = listener.guilds.cache.get(process.env.SERVER_ID);
     const msgUser = server.members.cache.get(user.id);
+
+    // create role if doesnt exist
+    const hasNewRoles = await createCollRoles(server, collMap)
+    if ( hasNewRoles ) collMap = GetGlobalCollMap( collMap.id )
+
     if ( reaction._emoji.name === "🧹" ) {
       msgUser.roles.remove(collMap.floorRole)
     } else if ( reaction._emoji.name === "📊" ) {
@@ -149,3 +152,44 @@ const generateCode = () => {
   //The maximum is exclusive and the minimum is inclusive
   return Math.floor(Math.random() * (max - min) + min);
 };
+
+const createCollRoles = async (server, collMap) => {
+  let created = false
+  // create floor role
+  if ( !collMap.floorRole ) {
+    const roleName = `${ collMap.collection } Floor`
+    const role = await server.roles.create({
+      name: roleName,
+      color: 'BLUE',
+    })
+    console.log('New Floor Role: ', role.id)
+
+    const updCollMap = await updateCollMap(
+      collMap.id,
+      { id: collMap.id, floorRole: role.id },
+      errMsg => console.log(`Err updating collection map: ${ errMsg }`)
+    );
+    if (updCollMap) UpdateGlobalCollMap(updCollMap);
+    created = true
+  }
+
+  // create sugg role
+  if ( !collMap.suggestedRole ) {
+    const roleName = `${ collMap.collection } Suggested`
+    const role = await server.roles.create({
+      name: roleName,
+      color: 'YELLOW',
+    })
+    console.log('New Suggested Role: ', role.id)
+
+    const updCollMap = await updateCollMap(
+      collMap.id,
+      { id: collMap.id, suggestedRole: role.id },
+      errMsg => console.log(`Err updating collection map: ${ errMsg }`)
+    );
+    if (updCollMap) UpdateGlobalCollMap(updCollMap);
+    created = true
+  }
+
+  return created
+}

@@ -28,7 +28,11 @@ import {
   updateTracker,
   updateCollMap,
 } from "../../../api";
-import { GetCollMaps, SetCollMaps, UpdateCollMap } from "../../../collMappings";
+import {
+  GetGlobalCollMaps,
+  SetGlobalCollMaps,
+  UpdateGlobalCollMap,
+} from "../../../collMappings";
 import config from "../config.json";
 
 class CronBot {
@@ -86,7 +90,7 @@ class CronBot {
       this.sendErrMsg("setCollMaps")
     );
     if (collMaps) {
-      SetCollMaps(collMaps);
+      SetGlobalCollMaps(collMaps);
       console.log(`${collMaps.size} Collection Mappings set.`);
     } else {
       throw Error("Unable to load collection mappings");
@@ -162,20 +166,22 @@ class CronBot {
     // broadcast best
     if (tracker.currentBest.isNew) {
       const bestEmbed = buildBestEmbed(tracker, apiPath);
+      const bestTitle = buildBestTitle(tracker, collMap);
       await webhook.send({
-        content: "New Best",
+        content: bestTitle,
         username: "Degen Bible Bot",
         embeds: [bestEmbed],
       });
     }
 
-    // broadcast best
-    if (tracker.currentBest.isNew) {
-      const bestEmbed = buildBestEmbed(tracker, apiPath);
+    // broadcast floor
+    if (tracker.currentFloor.isNew) {
+      const floorEmbed = buildFloorEmbed(tracker, apiPath);
+      const floorTitle = buildFloorTitle(tracker, collMap);
       await webhook.send({
-        content: "New Best",
+        content: floorTitle,
         username: "Degen Bible Bot",
-        embeds: [bestEmbed],
+        embeds: [floorEmbed],
       });
     }
 
@@ -212,13 +218,13 @@ class CronBot {
           { id, pinMsgId: msg.id },
           this.sendErrMsg(apiPath + "-update-err")
         );
-        if (updCollMap) UpdateCollMap(updCollMap);
+        if (updCollMap) UpdateGlobalCollMap(updCollMap);
       }
 
       // update last broadcast at
       trackerUpds.lastBroadcastAt = Moment().format();
       await updateTracker(
-        id,
+        apiPath,
         trackerUpds,
         this.sendErrMsg(apiPath + "-update-err")
       );
@@ -230,7 +236,7 @@ class CronBot {
 
   async sendMessages(): Promise<void> {
     const promiseArr = [] as Promise<CollectionTracker | undefined>[];
-    GetCollMaps().forEach((collMap) => {
+    GetGlobalCollMaps().forEach((collMap) => {
       promiseArr.push(this.handleMessage(collMap));
     });
     const promises = Promise.all(promiseArr);
