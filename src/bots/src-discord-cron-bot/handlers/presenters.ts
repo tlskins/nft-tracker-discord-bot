@@ -3,6 +3,7 @@ import {
   CollectionTracker,
   MarketSummary,
   ITokenTracker,
+  ICollectionMapping,
 } from "../../../types";
 
 import { MessageEmbed } from "discord.js";
@@ -133,7 +134,80 @@ export const getBibleLink = (path: string): string => {
   return `https://www.degenbible.com/collections/${path}`;
 };
 
+export const buildBestTitle = (
+  tracker: CollectionTracker,
+  mapping: ICollectionMapping
+): string => {
+  let mentions = "";
+  if (mapping.floorRole) {
+    mentions = `<@&${mapping.floorRole}> `;
+  }
+  return `${mentions}New Best @ ${
+    tracker.currentBest.price?.toFixed(2) || "?"
+  } SOL`;
+};
+
 export const buildBestEmbed = (
+  tracker: CollectionTracker,
+  path: string
+): MessageEmbed => {
+  const { collection, currentBest } = tracker;
+
+  const embed = new MessageEmbed()
+    .setColor("#0099ff")
+    .setTitle(`${collection} Best Listing`)
+    .setURL(currentBest.url)
+    .setAuthor("Degen Bible Bot")
+    .setDescription(
+      `${getListingPrefix(currentBest)} @ ${getPrice(currentBest)}`
+    )
+    .addFields(
+      {
+        name: `Analysis`,
+        value: getBibleLink(path),
+      },
+      {
+        name: `Best Listing`,
+        value: `${currentBest.title}`,
+        inline: true,
+      },
+      {
+        name: `Compare Best`,
+        value: getBestRankTxt(currentBest),
+        inline: true,
+      },
+      {
+        name: `Sugg Price`,
+        value: getSuggestedPriceTxt(currentBest),
+        inline: true,
+      },
+      {
+        name: `Top Traits`,
+        value: getTopAttrsTxt(currentBest),
+        inline: true,
+      }
+    )
+    .setImage(currentBest.image)
+    .setFooter(`Listing: ${currentBest.url}`)
+    .setTimestamp();
+
+  return embed;
+};
+
+export const buildFloorTitle = (
+  tracker: CollectionTracker,
+  mapping: ICollectionMapping
+): string => {
+  let mentions = "";
+  if (mapping.floorRole) {
+    mentions = `<@&${mapping.floorRole}> `;
+  }
+  return `${mentions}New Floor @ ${
+    tracker.currentBest.price?.toFixed(2) || "?"
+  } SOL`;
+};
+
+export const buildFloorEmbed = (
   tracker: CollectionTracker,
   path: string
 ): MessageEmbed => {

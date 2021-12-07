@@ -6,6 +6,8 @@ import {
   ITokenTracker,
   ILandingResp,
   ICollectionMapping,
+  ICollectionMappingResp,
+  IUpsertCollectionMapping,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 
@@ -13,12 +15,16 @@ import Moment from "moment";
 
 export const getCollectionMappings = async (
   handleErr: (msg: string) => Promise<void>
-): Promise<[ICollectionMapping] | undefined> => {
+): Promise<Map<string, ICollectionMapping> | undefined> => {
   console.log("getting collection mappings...");
   try {
     const resp: ILandingResp = await rest.get("/landing");
+    const out = (resp.data?.collections || []).reduce((maps, collMap) => {
+      maps.set(collMap.id, collMap);
+      return maps;
+    }, new Map() as Map<string, ICollectionMapping>);
 
-    return resp.data?.collections;
+    return out;
   } catch (err) {
     const errMsg = `error getting collection mappings: ${err.response?.data?.message}`;
     console.log(errMsg);
@@ -106,6 +112,25 @@ export const updateTracker = async (
     return collectionData.data.tracker;
   } catch (err) {
     const errMsg = `error updating ${collection} tracker: ${err.response?.data?.message}`;
+    console.log(errMsg);
+    handleErr(errMsg);
+  }
+};
+
+export const updateCollMap = async (
+  collId: string,
+  req: IUpsertCollectionMapping,
+  handleErr: (msg: string) => Promise<void>
+): Promise<ICollectionMapping | undefined> => {
+  try {
+    const collectionData = (await rest.put(
+      `/collection-mapping`,
+      req
+    )) as ICollectionMappingResp;
+
+    return collectionData.data.mapping;
+  } catch (err) {
+    const errMsg = `error updating ${collId} mapping: ${err.response?.data?.message}`;
     console.log(errMsg);
     handleErr(errMsg);
   }

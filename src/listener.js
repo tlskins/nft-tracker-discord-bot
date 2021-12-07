@@ -2,6 +2,11 @@ import "dotenv/config";
 import rest from "./bots/src-discord-cron-bot/rest";
 const { Client, Intents } = require("discord.js");
 
+import { getCollectionMappings } from "./api";
+import { FindCollMapByPinId } from "./collMappings"
+
+var collMaps = []
+
 export const BuildListener = () => {
   return new Client({
     intents: [
@@ -18,7 +23,11 @@ export const BuildListener = () => {
   });
 };
 
-export const StartListener = (listener) => {
+export const StartListener = async (listener) => {
+  // initializers
+  const collMaps = await getCollectionMappings((msg) => console.log(`Err getting coll maps: ${msg}`))
+  console.log(`${ collMaps.size } Collection Mappings found`);
+
   listener.on("ready", () => {
     console.log(`Logged in as ${listener.user.tag}!`);
   });
@@ -27,8 +36,6 @@ export const StartListener = (listener) => {
   listener.on("messageCreate", async (message) => {
     console.log("messageCreate ", message);
     if (message.author.bot) return false;
-
-    // console.log(`Message from ${message.author.username}: ${message.content}`);
 
     if (message.content === "/verify") {
       const verifyCode = generateCode();
@@ -62,6 +69,7 @@ export const StartListener = (listener) => {
     await syncAllMembershipRoles()
   });
 
+  // subscribe coll role
   listener.on('messageReactionAdd', async (reaction, user) => {
     console.log('reaction add')
     console.log('messageId: ', reaction.message.id)
@@ -69,13 +77,19 @@ export const StartListener = (listener) => {
     console.log('deleted: ', reaction.message.deleted)
     console.log('emoji: ', reaction._emoji.name)
 
-    if ( reaction.message.id === "913912020062044230" && reaction._emoji.name === "🧹" ) {
-      let server = listener.guilds.cache.get("899854088819314708");
-      let msgUser = server.members.cache.get(user.id);
-      msgUser.roles.add("917252683553996852")
+    let collMap = FindCollMapByPinId( reaction.message.id )
+    if ( !collMap ) return
+  
+    const server = listener.guilds.cache.get(process.env.SERVER_ID);
+    const msgUser = server.members.cache.get(user.id);
+    if ( reaction._emoji.name === "🧹" ) {
+      msgUser.roles.add(collMap.floorRole)
+    } else if ( reaction._emoji.name === "📊" ) {
+      msgUser.roles.add(collMap.suggestedRole)
     }
   });
 
+  // unsubscribe coll role
   listener.on('messageReactionRemove', async (reaction, user) => {
     console.log('reaction remove')
     console.log('messageId: ', reaction.message.id)
@@ -83,10 +97,15 @@ export const StartListener = (listener) => {
     console.log('deleted: ', reaction.message.deleted)
     console.log('emoji: ', reaction._emoji.name)
 
-    if ( reaction.message.id === "913912020062044230" && reaction._emoji.name === "🧹" ) {
-      let server = listener.guilds.cache.get("899854088819314708");
-      let msgUser = server.members.cache.get(user.id);
-      msgUser.roles.remove("917252683553996852")
+    let collMap = FindCollMapByPinId( reaction.message.id )
+    if ( !collMap ) return
+
+    const server = listener.guilds.cache.get(process.env.SERVER_ID);
+    const msgUser = server.members.cache.get(user.id);
+    if ( reaction._emoji.name === "🧹" ) {
+      msgUser.roles.remove(collMap.floorRole)
+    } else if ( reaction._emoji.name === "📊" ) {
+      msgUser.roles.remove(collMap.suggestedRole)
     }
   });
 
