@@ -45,15 +45,17 @@ export const StartListener = async (listener) => {
   });
 
   // role synchronization with db
-  listener.on("guildMemberUpdate", async (_, newMember) => {
-    console.log("newMember", newMember);
-
+  listener.on("guildMemberUpdate", async (oldMember, newMember) => {
     listener.users.cache.get(newMember.id)
 
     const discordId = newMember.user.id
     const isOG = newMember._roles.includes( process.env.OG_ROLE_ID )
-    console.log("is OG", discordId, isOG)
-    await updateRole({ discordId, isOG })
+    const wasOG = oldMember._roles.includes( process.env.OG_ROLE_ID )
+    console.log("is OG", discordId, isOG, wasOG)
+    if ( isOG !== wasOG ) {
+      console.log('updating og role ', isOG, discordId)
+      await updateRole({ discordId, isOG })
+    }
   });
 
   // new member
@@ -71,7 +73,6 @@ export const StartListener = async (listener) => {
 
     let collMap = FindGlobalCollMapByPin( reaction.message.id )
     if ( !collMap ) return
-    console.log(`collMap found for ${ collMap.collection }`)
   
     const server = listener.guilds.cache.get(process.env.SERVER_ID);
     const msgUser = server.members.cache.get(user.id);

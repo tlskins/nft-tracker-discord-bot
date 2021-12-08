@@ -203,52 +203,40 @@ export const buildFloorTitle = (
     mentions = `<@&${mapping.floorRole}> `;
   }
   return `${mentions}New Floor @ ${
-    tracker.currentBest.price?.toFixed(2) || "?"
+    tracker.currentFloor.price?.toFixed(2) || "?"
   } SOL`;
 };
 
-export const buildFloorEmbed = (
-  tracker: CollectionTracker,
-  path: string
-): MessageEmbed => {
-  const { collection, currentBest } = tracker;
+export const buildFloorEmbed = (tracker: CollectionTracker): MessageEmbed => {
+  const { collection, currentFloor } = tracker;
 
   const embed = new MessageEmbed()
     .setColor("#0099ff")
     .setTitle(`${collection} Best Listing`)
-    .setURL(currentBest.url)
+    .setURL(currentFloor.url)
     .setAuthor("Degen Bible Bot")
     .setDescription(
-      `${getListingPrefix(currentBest)} @ ${getPrice(currentBest)}`
+      `${getListingPrefix(currentFloor)} @ ${getPrice(currentFloor)}`
     )
     .addFields(
       {
-        name: `Analysis`,
-        value: getBibleLink(path),
-      },
-      {
-        name: `Best Listing`,
-        value: `${currentBest.title}`,
-        inline: true,
-      },
-      {
-        name: `Compare Best`,
-        value: getBestRankTxt(currentBest),
+        name: `Floor Listing`,
+        value: `${currentFloor.title}`,
         inline: true,
       },
       {
         name: `Sugg Price`,
-        value: getSuggestedPriceTxt(currentBest),
+        value: getSuggestedPriceTxt(currentFloor),
         inline: true,
       },
       {
         name: `Top Traits`,
-        value: getTopAttrsTxt(currentBest),
+        value: getTopAttrsTxt(currentFloor),
         inline: true,
       }
     )
-    .setImage(currentBest.image)
-    .setFooter(`Listing: ${currentBest.url}`)
+    .setImage(currentFloor.image)
+    .setFooter(`Listing: ${currentFloor.url}`)
     .setTimestamp();
 
   return embed;

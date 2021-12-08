@@ -176,7 +176,7 @@ class CronBot {
 
     // broadcast floor
     if (tracker.currentFloor.isNew) {
-      const floorEmbed = buildFloorEmbed(tracker, apiPath);
+      const floorEmbed = buildFloorEmbed(tracker);
       const floorTitle = buildFloorTitle(tracker, collMap);
       await webhook.send({
         content: floorTitle,
