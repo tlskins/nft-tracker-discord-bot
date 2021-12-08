@@ -39,6 +39,7 @@ export interface CollectionTracker {
   lastBroadcastAt: string;
   lastErrCastAt: string;
 
+  currentFloor: MarketListing;
   currentBest: MarketListing;
   lastDayBest: MarketListing;
   lastWeekBest: MarketListing;
@@ -53,6 +54,14 @@ export interface UpdateCollectionTracker {
   pinnedMsgId?: string;
   lastBroadcastAt?: string;
   lastErrCastAt?: string;
+}
+
+export interface IUpsertCollectionMapping {
+  id: string;
+
+  pinMsgId?: string;
+  floorRole?: string;
+  suggestedRole?: string;
 }
 
 export interface MarketSummary {
@@ -203,12 +212,24 @@ export interface ILandingResp {
 export interface ILandingData {
   collections: [ICollectionMapping];
 }
+
+export interface ICollectionMappingResp {
+  data: ICollectionMappingData;
+}
+
+export interface ICollectionMappingData {
+  mapping: ICollectionMapping;
+}
+
 export interface ICollectionMapping {
   id: string;
   collection: string;
   rankType: string;
   apiPath: string;
   channelId: string;
+  pinMsgId: string;
+  floorRole: string;
+  suggestedRole: string;
   totalSupply: number;
   updateAuthority: string;
 }

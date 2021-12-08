@@ -3,6 +3,7 @@ import {
   CollectionTracker,
   MarketSummary,
   ITokenTracker,
+  ICollectionMapping,
 } from "../../../types";
 
 import { MessageEmbed } from "discord.js";
@@ -133,6 +134,19 @@ export const getBibleLink = (path: string): string => {
   return `https://www.degenbible.com/collections/${path}`;
 };
 
+export const buildBestTitle = (
+  tracker: CollectionTracker,
+  mapping: ICollectionMapping
+): string => {
+  let mentions = "";
+  if (mapping.suggestedRole) {
+    mentions = `<@&${mapping.suggestedRole}> `;
+  }
+  return `${mentions}New Best @ ${
+    tracker.currentBest.price?.toFixed(2) || "?"
+  } SOL`;
+};
+
 export const buildBestEmbed = (
   tracker: CollectionTracker,
   path: string
@@ -175,6 +189,54 @@ export const buildBestEmbed = (
     )
     .setImage(currentBest.image)
     .setFooter(`Listing: ${currentBest.url}`)
+    .setTimestamp();
+
+  return embed;
+};
+
+export const buildFloorTitle = (
+  tracker: CollectionTracker,
+  mapping: ICollectionMapping
+): string => {
+  let mentions = "";
+  if (mapping.floorRole) {
+    mentions = `<@&${mapping.floorRole}> `;
+  }
+  return `${mentions}New Floor @ ${
+    tracker.currentFloor.price?.toFixed(2) || "?"
+  } SOL`;
+};
+
+export const buildFloorEmbed = (tracker: CollectionTracker): MessageEmbed => {
+  const { collection, currentFloor } = tracker;
+
+  const embed = new MessageEmbed()
+    .setColor("#ffff00")
+    .setTitle(`${collection} Floor Listing`)
+    .setURL(currentFloor.url)
+    .setAuthor("Degen Bible Bot")
+    .setDescription(
+      `${getListingPrefix(currentFloor)} @ ${getPrice(currentFloor)}`
+    )
+    .addFields(
+      {
+        name: `Floor Listing`,
+        value: `${currentFloor.title}`,
+        inline: true,
+      },
+      {
+        name: `Sugg Price`,
+        value: getSuggestedPriceTxt(currentFloor),
+        inline: true,
+      },
+      {
+        name: `Top Traits`,
+        value: getTopAttrsTxt(currentFloor),
+        inline: true,
+      }
+    )
+    .setImage(currentFloor.image)
+    .setFooter(`Listing: ${currentFloor.url}`)
     .setTimestamp();
 
   return embed;

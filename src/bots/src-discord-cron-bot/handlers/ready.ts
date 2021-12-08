@@ -6,13 +6,17 @@ import {
   CollectionTracker,
   Rule,
   ICollectionMapping,
+  UpdateCollectionTracker,
 } from "../../../types";
 import {
   buildMarketEmbed,
+  buildBestTitle,
   buildBestEmbed,
   shouldBroadcast,
   shouldBroadcastErr,
   buildAllMarketsEmbed,
+  buildFloorTitle,
+  buildFloorEmbed,
   toTokenAlertMsg,
 } from "./presenters";
 import {
@@ -22,14 +26,19 @@ import {
   resetTokenAlerts,
   syncSubscriptions,
   updateTracker,
+  updateCollMap,
 } from "../../../api";
+import {
+  GetGlobalCollMaps,
+  SetGlobalCollMaps,
+  UpdateGlobalCollMap,
+} from "../../../collMappings";
 import config from "../config.json";
 
 class CronBot {
   client: Client;
   rule: Rule;
   broadcasts: Map<string, Moment.Moment>;
-  collMaps: ICollectionMapping[];
   lastOvrBest: CollectionTracker | undefined;
   lastTokenAlert: Moment.Moment | undefined;
 
@@ -37,7 +46,6 @@ class CronBot {
     this.client = client;
     this.rule = rule;
     this.broadcasts = new Map();
-    this.collMaps = [];
     this.setCollectionMappings();
   }
 
@@ -82,13 +90,8 @@ class CronBot {
       this.sendErrMsg("setCollMaps")
     );
     if (collMaps) {
-      this.collMaps = collMaps;
-      const count = this.collMaps.length;
-      console.log(
-        `${count} Collection Mappings set. Last: ${
-          this.collMaps[count - 1]?.collection || "?"
-        }`
-      );
+      SetGlobalCollMaps(collMaps);
+      console.log(`${collMaps.size} Collection Mappings set.`);
     } else {
       throw Error("Unable to load collection mappings");
     }
@@ -143,18 +146,18 @@ class CronBot {
   }
 
   async handleMessage(
-    apiColl: string,
-    channelId: string
+    collMap: ICollectionMapping
   ): Promise<CollectionTracker | undefined> {
+    const { id, collection, channelId, apiPath } = collMap;
     console.log(
-      `sending ${apiColl} msg to channel ${channelId} @ ${Moment().format()}`
+      `sending ${collection} msg to channel ${channelId} @ ${Moment().format()}`
     );
     const webhook = await this._getWebhook(channelId);
 
     // get data
     const tracker = await getMarketListings(
-      apiColl,
-      this.sendErrMsg(apiColl + "-err")
+      apiPath,
+      this.sendErrMsg(apiPath + "-err")
     );
     if (!tracker) {
       return;
@@ -162,11 +165,23 @@ class CronBot {
 
     // broadcast best
     if (tracker.currentBest.isNew) {
-      const bestEmbed = buildBestEmbed(tracker, apiColl);
+      const bestEmbed = buildBestEmbed(tracker, apiPath);
+      const bestTitle = buildBestTitle(tracker, collMap);
       await webhook.send({
-        content: "New Best",
+        content: bestTitle,
         username: "Degen Bible Bot",
         embeds: [bestEmbed],
+      });
+    }
+
+    // broadcast floor
+    if (tracker.currentFloor.isNew) {
+      const floorEmbed = buildFloorEmbed(tracker);
+      const floorTitle = buildFloorTitle(tracker, collMap);
+      await webhook.send({
+        content: floorTitle,
+        username: "Degen Bible Bot",
+        embeds: [floorEmbed],
       });
     }
 
@@ -174,66 +189,59 @@ class CronBot {
       ? Moment(tracker.lastBroadcastAt)
       : undefined;
 
-    // seed emojis
-    if (tracker.pinnedMsgId) {
-      const msg: Message = (await webhook.fetchMessage(
-        tracker.pinnedMsgId
-      )) as Message;
-      msg.react("🧹");
-      msg.react("📊");
-    }
-
-    // send / update market msg
+    // send / update pinned msg
     if (shouldBroadcast(lastBroadcastAt)) {
-      const mktEmbed = buildMarketEmbed(tracker, apiColl);
+      const mktEmbed = buildMarketEmbed(tracker, apiPath);
       const mktMsg = {
         content: "Market Summary",
         username: "Degen Bible Bot",
         embeds: [mktEmbed],
       };
 
+      const trackerUpds = { id: tracker.id } as UpdateCollectionTracker;
       const pinMsgId = tracker.pinnedMsgId;
       if (pinMsgId) {
-        console.log(`updating ${apiColl} pin...`);
+        console.log(`updating ${apiPath} pin...`);
         await webhook.editMessage(pinMsgId, mktMsg);
-        console.log(`updated ${apiColl} pin!`);
+        console.log(`updated ${apiPath} pin!`);
       } else {
         const sentMsg = await webhook.send(mktMsg);
         const msg: Message = (await webhook.fetchMessage(
           sentMsg.id
         )) as Message;
         await msg.pin();
+        msg.react("🧹");
+        msg.react("📊");
 
         // update pinned msg id
-        await updateTracker(
-          apiColl,
-          {
-            id: tracker.id,
-            pinnedMsgId: msg.id,
-          },
-          this.sendErrMsg(apiColl + "-update-err")
+        trackerUpds.pinnedMsgId = msg.id;
+        const updCollMap = await updateCollMap(
+          id,
+          { id, pinMsgId: msg.id },
+          this.sendErrMsg(apiPath + "-update-err")
         );
+        if (updCollMap) UpdateGlobalCollMap(updCollMap);
       }
 
       // update last broadcast at
+      trackerUpds.lastBroadcastAt = Moment().format();
       await updateTracker(
-        apiColl,
-        {
-          id: tracker.id,
-          lastBroadcastAt: Moment().format(),
-        },
-        this.sendErrMsg(apiColl + "-update-err")
+        apiPath,
+        trackerUpds,
+        this.sendErrMsg(apiPath + "-update-err")
       );
     }
 
-    tracker.apiColl = apiColl;
+    tracker.apiColl = apiPath;
     return tracker;
   }
 
   async sendMessages(): Promise<void> {
-    const promises = Promise.all(
-      this.collMaps.map((map) => this.handleMessage(map.apiPath, map.channelId))
-    );
+    const promiseArr = [] as Promise<CollectionTracker | undefined>[];
+    GetGlobalCollMaps().forEach((collMap) => {
+      promiseArr.push(this.handleMessage(collMap));
+    });
+    const promises = Promise.all(promiseArr);
 
     const trackers = await promises;
     const mktSums = trackers
