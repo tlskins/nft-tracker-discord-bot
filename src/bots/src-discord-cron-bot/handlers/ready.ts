@@ -204,6 +204,12 @@ class CronBot {
         username: "Degen Bible Bot",
         embeds: [pumpEmbed],
       });
+
+      // temp dm me all pumps
+      this.sendDm(
+        "709266899602505740",
+        `Pump detected for ${collMap.collection}`
+      );
     }
 
     const lastBroadcastAt = tracker.lastBroadcastAt
