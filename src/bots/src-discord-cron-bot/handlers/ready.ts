@@ -1,13 +1,6 @@
 import { CronJob } from "cron";
 import Moment from "moment";
-import {
-  Client,
-  Snowflake,
-  TextChannel,
-  Webhook,
-  Message,
-  APIMessage,
-} from "discord.js";
+import { Client, Snowflake, TextChannel, Webhook, Message } from "discord.js";
 import {
   Config,
   CollectionTracker,
