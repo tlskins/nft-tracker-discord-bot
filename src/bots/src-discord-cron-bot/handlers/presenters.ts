@@ -229,24 +229,14 @@ export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
     .setAuthor("Degen Bible Bot")
     .addFields(
       {
-        name: `Floor Count Slope`,
-        value: floorCountSlope.toFixed(2),
-        inline: true,
-      },
-      {
-        name: `Floor Counts`,
+        name: `Floor Counts (Slope ${floorCountSlope.toFixed(2)})`,
         value: floorCounts
           .map((cnt) => `${cnt.count}@${cnt.price}`)
           .join(" | "),
         inline: true,
       },
       {
-        name: `Sales Count Slope`,
-        value: saleCountSlope.toFixed(2),
-        inline: true,
-      },
-      {
-        name: `Sales Counts`,
+        name: `Sales Counts (Slope ${saleCountSlope.toFixed(2)})`,
         value: saleCounts
           .slice(0, 5)
           .map(
@@ -257,12 +247,7 @@ export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
         inline: true,
       },
       {
-        name: `Listing Count Slope`,
-        value: listingCountSlope.toFixed(2),
-        inline: true,
-      },
-      {
-        name: `Listing Counts`,
+        name: `Listing Counts (Slope ${listingCountSlope.toFixed(2)})`,
         value: listingCounts
           .filter((_, i) => i % 2 === 0)
           .map(
