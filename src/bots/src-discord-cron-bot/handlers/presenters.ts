@@ -198,9 +198,9 @@ export const buildPumpTitle = (
   tracker: CollectionTracker,
   mapping: ICollectionMapping
 ): string => {
-  let mentions = "";
+  let mentions = `<@&${process.env.ALL_PUMP_ROLE_ID}> `;
   if (mapping.pumpRole) {
-    mentions = `<@&${mapping.pumpRole}> `;
+    mentions += `<@&${mapping.pumpRole}> `;
   }
   const { saleCounts } = tracker.marketSummary;
   let descrip = "0 sales in the last 0 mins";
