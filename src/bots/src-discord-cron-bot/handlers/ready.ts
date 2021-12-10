@@ -198,8 +198,8 @@ class CronBot {
       floorCountSlope > 0 && // lower floors are thinner
       listingCountSlope > 0 && // listings are decreasing
       // velocity checkers
-      ((floorCounts[0].count <= 3 && // floor 0 has 3 or fewer listings
-        floorCounts[1].count <= 8) || // floor 1 has 8 or fewer listings
+      floorCounts[0].count <= 3 && // floor 0 has 3 or fewer listings
+      (floorCounts[1].count <= 7 || // floor 1 has 8 or fewer listings
         saleCountSlope < -0.1 || // high velocity sales
         listingCountSlope > 0.1) // high velocity de-listings
     ) {
