@@ -1,6 +1,13 @@
 import { CronJob } from "cron";
 import Moment from "moment";
-import { Client, Snowflake, TextChannel, Webhook, Message } from "discord.js";
+import {
+  Client,
+  Snowflake,
+  TextChannel,
+  Webhook,
+  Message,
+  APIMessage,
+} from "discord.js";
 import {
   Config,
   CollectionTracker,
@@ -223,8 +230,10 @@ class CronBot {
       const pinMsgId = tracker.pinnedMsgId;
       if (pinMsgId) {
         console.log(`updating ${apiPath} pin...`);
-        await webhook.editMessage(pinMsgId, mktMsg);
+        const msg = await webhook.editMessage(pinMsgId, mktMsg);
         console.log(`updated ${apiPath} pin!`);
+
+        if (msg) (msg as APIMessage).react("🚨"); // temp add new role emojis
       } else {
         const sentMsg = await webhook.send(mktMsg);
         const msg: Message = (await webhook.fetchMessage(
