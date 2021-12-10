@@ -17,6 +17,8 @@ import {
   buildAllMarketsEmbed,
   buildFloorTitle,
   buildFloorEmbed,
+  buildPumpTitle,
+  buildPumpEmbed,
   toTokenAlertMsg,
 } from "./presenters";
 import {
@@ -163,8 +165,12 @@ class CronBot {
       return;
     }
 
+    const { currentBest, currentFloor, marketSummary } = tracker;
+    const { saleCountSlope, floorCountSlope, listingCountSlope } =
+      marketSummary;
+
     // broadcast best
-    if (tracker.currentBest.isNew) {
+    if (currentBest.isNew) {
       const bestEmbed = buildBestEmbed(tracker, apiPath);
       const bestTitle = buildBestTitle(tracker, collMap);
       await webhook.send({
@@ -175,13 +181,28 @@ class CronBot {
     }
 
     // broadcast floor
-    if (tracker.currentFloor.isNew) {
+    if (currentFloor.isNew) {
       const floorEmbed = buildFloorEmbed(tracker);
       const floorTitle = buildFloorTitle(tracker, collMap);
       await webhook.send({
         content: floorTitle,
         username: "Degen Bible Bot",
         embeds: [floorEmbed],
+      });
+    }
+
+    // broadcast pump alert
+    if (
+      saleCountSlope < 0 && // sales are increasing
+      floorCountSlope > 0 && // lower floors are thinner
+      listingCountSlope > 0 // listings are decreasing
+    ) {
+      const pumpTitle = buildPumpTitle(tracker, collMap);
+      const pumpEmbed = buildPumpEmbed(tracker);
+      await webhook.send({
+        content: pumpTitle,
+        username: "Degen Bible Bot",
+        embeds: [pumpEmbed],
       });
     }
 
@@ -212,6 +233,7 @@ class CronBot {
         await msg.pin();
         msg.react("🧹");
         msg.react("📊");
+        msg.react("🚨");
 
         // update pinned msg id
         trackerUpds.pinnedMsgId = msg.id;

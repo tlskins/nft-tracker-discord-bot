@@ -194,6 +194,93 @@ export const buildBestEmbed = (
   return embed;
 };
 
+export const buildPumpTitle = (
+  tracker: CollectionTracker,
+  mapping: ICollectionMapping
+): string => {
+  let mentions = "";
+  if (mapping.pumpRole) {
+    mentions = `<@&${mapping.pumpRole}> `;
+  }
+  const { saleCounts } = tracker.marketSummary;
+  let descrip = "0 sales in the last 0 mins";
+  if (saleCounts.length > 0) {
+    const count = saleCounts[0].count;
+    const mins = Moment().diff(Moment(saleCounts[0].time), "minutes");
+    descrip = `${count} sales in the last ${mins} mins`;
+  }
+  return `${mentions}Pump Alert! - ${descrip}`;
+};
+
+export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
+  const { collection, currentFloor, marketSummary } = tracker;
+  const {
+    floorCounts,
+    floorCountSlope,
+    listingCounts,
+    listingCountSlope,
+    saleCounts,
+    saleCountSlope,
+  } = marketSummary;
+
+  const embed = new MessageEmbed()
+    .setColor("#ff0000")
+    .setTitle(`${collection} Pump Alert`)
+    .setAuthor("Degen Bible Bot")
+    .addFields(
+      {
+        name: `Floor Count Slope`,
+        value: floorCountSlope.toFixed(2),
+        inline: true,
+      },
+      {
+        name: `Floor Counts`,
+        value: floorCounts
+          .map((cnt) => `${cnt.count}_@_${cnt.price}`)
+          .join(" | "),
+        inline: true,
+      },
+      {
+        name: `Sales Count Slope`,
+        value: saleCountSlope.toFixed(2),
+        inline: true,
+      },
+      {
+        name: `Sales Counts`,
+        value: saleCounts
+          .slice(0, 5)
+          .map(
+            (cnt) =>
+              `${cnt.count}_${Moment().diff(Moment(cnt.time), "minutes")}mins`
+          )
+          .join(" | "),
+        inline: true,
+      },
+      {
+        name: `Listing Count Slope`,
+        value: listingCountSlope.toFixed(2),
+        inline: true,
+      },
+      {
+        name: `Listing Counts`,
+        value: listingCounts
+          .filter((_, i) => i % 12 === 0)
+          .map(
+            (cnt) =>
+              `${cnt.count}_@_${Moment().diff(Moment(cnt.time), "minutes")}mins`
+          )
+          .join(" | "),
+        inline: true,
+      }
+    )
+    .setImage(currentFloor.image)
+    .setFooter(`Floor: ${currentFloor.url}`)
+    .setURL(currentFloor.url)
+    .setTimestamp();
+
+  return embed;
+};
+
 export const buildFloorTitle = (
   tracker: CollectionTracker,
   mapping: ICollectionMapping

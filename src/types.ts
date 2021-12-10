@@ -73,6 +73,29 @@ export interface MarketSummary {
   hourMarketSummary: MarketWindowSummary;
   dayMarketSummary: MarketWindowSummary;
   weekMarketSummary: MarketWindowSummary;
+
+  saleCounts: ISaleCount[];
+  floorCounts: IFloorCount[];
+  listingCounts: IListingCount[];
+
+  saleCountSlope: number;
+  floorCountSlope: number;
+  listingCountSlope: number;
+}
+
+export interface ISaleCount {
+  time: string;
+  count: number;
+}
+
+export interface IListingCount {
+  time: string;
+  count: number;
+}
+
+export interface IFloorCount {
+  price: number;
+  count: number;
 }
 
 export interface MarketWindowSummary {
@@ -230,6 +253,7 @@ export interface ICollectionMapping {
   pinMsgId: string;
   floorRole: string;
   suggestedRole: string;
+  pumpRole: string;
   totalSupply: number;
   updateAuthority: string;
 }

@@ -86,6 +86,8 @@ export const StartListener = async (listener) => {
       msgUser.roles.add(collMap.floorRole)
     } else if ( reaction._emoji.name === "📊" ) {
       msgUser.roles.add(collMap.suggestedRole)
+    } else if ( reaction._emoji.name === "🚨" ) {
+      msgUser.roles.add(collMap.pumpRole)
     }
   });
 
@@ -110,6 +112,8 @@ export const StartListener = async (listener) => {
       msgUser.roles.remove(collMap.floorRole)
     } else if ( reaction._emoji.name === "📊" ) {
       msgUser.roles.remove(collMap.suggestedRole)
+    } else if ( reaction._emoji.name === "🚨" ) {
+      msgUser.roles.remove(collMap.pumpRole)
     }
   });
 
@@ -186,6 +190,24 @@ const createCollRoles = async (server, collMap) => {
     const updCollMap = await updateCollMap(
       collMap.id,
       { id: collMap.id, suggestedRole: role.id },
+      errMsg => console.log(`Err updating collection map: ${ errMsg }`)
+    );
+    if (updCollMap) UpdateGlobalCollMap(updCollMap);
+    created = true
+  }
+
+  // create pump role
+  if ( !collMap.suggestedRole ) {
+    const roleName = `${ collMap.collection } Pump`
+    const role = await server.roles.create({
+      name: roleName,
+      color: 'GREEN',
+    })
+    console.log('New Pump Role: ', role.id)
+
+    const updCollMap = await updateCollMap(
+      collMap.id,
+      { id: collMap.id, pumpRole: role.id },
       errMsg => console.log(`Err updating collection map: ${ errMsg }`)
     );
     if (updCollMap) UpdateGlobalCollMap(updCollMap);
