@@ -166,7 +166,7 @@ class CronBot {
     }
 
     const { currentBest, currentFloor, marketSummary } = tracker;
-    const { saleCountSlope, floorCountSlope, listingCountSlope } =
+    const { saleCountSlope, floorCounts, floorCountSlope, listingCountSlope } =
       marketSummary;
 
     // broadcast best
@@ -194,6 +194,8 @@ class CronBot {
     // broadcast pump alert
     if (
       saleCountSlope < 0 && // sales are increasing
+      floorCounts.length > 0 &&
+      floorCounts[0].count <= 3 && // floor has 3 or less listings
       floorCountSlope > 0 && // lower floors are thinner
       listingCountSlope > 0 // listings are decreasing
     ) {
@@ -206,10 +208,10 @@ class CronBot {
       });
 
       // temp dm me all pumps
-      this.sendDm(
-        "709266899602505740",
-        `Pump detected for ${collMap.collection}`
-      );
+      // this.sendDm(
+      //   "709266899602505740",
+      //   `Pump detected for ${collMap.collection}`
+      // );
     }
 
     const lastBroadcastAt = tracker.lastBroadcastAt
@@ -233,8 +235,8 @@ class CronBot {
         console.log(`updated ${apiPath} pin!`);
 
         // temp add new role emojis
-        const msg: Message = (await webhook.fetchMessage(pinMsgId)) as Message;
-        msg.react("⏰");
+        // const msg: Message = (await webhook.fetchMessage(pinMsgId)) as Message;
+        // msg.react("⏰");
       } else {
         const sentMsg = await webhook.send(mktMsg);
         const msg: Message = (await webhook.fetchMessage(
