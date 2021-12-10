@@ -235,7 +235,7 @@ class CronBot {
 
         // temp add new role emojis
         const msg: Message = (await webhook.fetchMessage(pinMsgId)) as Message;
-        msg.react("🚨");
+        msg.react("⏰");
       } else {
         const sentMsg = await webhook.send(mktMsg);
         const msg: Message = (await webhook.fetchMessage(
@@ -244,7 +244,7 @@ class CronBot {
         await msg.pin();
         msg.react("🧹");
         msg.react("📊");
-        msg.react("🚨");
+        msg.react("⏰");
 
         // update pinned msg id
         trackerUpds.pinnedMsgId = msg.id;

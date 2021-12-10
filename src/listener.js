@@ -86,7 +86,7 @@ export const StartListener = async (listener) => {
       msgUser.roles.add(collMap.floorRole)
     } else if ( reaction._emoji.name === "📊" ) {
       msgUser.roles.add(collMap.suggestedRole)
-    } else if ( reaction._emoji.name === "🚨" ) {
+    } else if ( reaction._emoji.name === "⏰" ) {
       msgUser.roles.add(collMap.pumpRole)
     }
   });
@@ -112,7 +112,7 @@ export const StartListener = async (listener) => {
       msgUser.roles.remove(collMap.floorRole)
     } else if ( reaction._emoji.name === "📊" ) {
       msgUser.roles.remove(collMap.suggestedRole)
-    } else if ( reaction._emoji.name === "🚨" ) {
+    } else if ( reaction._emoji.name === "⏰" ) {
       msgUser.roles.remove(collMap.pumpRole)
     }
   });
