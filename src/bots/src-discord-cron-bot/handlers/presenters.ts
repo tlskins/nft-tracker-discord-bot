@@ -236,7 +236,7 @@ export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
       {
         name: `Floor Counts`,
         value: floorCounts
-          .map((cnt) => `${cnt.count}_@_${cnt.price}`)
+          .map((cnt) => `${cnt.count}@${cnt.price}`)
           .join(" | "),
         inline: true,
       },
@@ -251,7 +251,7 @@ export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
           .slice(0, 5)
           .map(
             (cnt) =>
-              `${cnt.count}_${Moment().diff(Moment(cnt.time), "minutes")}mins`
+              `${cnt.count}in${Moment().diff(Moment(cnt.time), "minutes")}mins`
           )
           .join(" | "),
         inline: true,
@@ -264,10 +264,10 @@ export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
       {
         name: `Listing Counts`,
         value: listingCounts
-          .filter((_, i) => i % 12 === 0)
+          .filter((_, i) => i % 2 === 0)
           .map(
             (cnt) =>
-              `${cnt.count}_@_${Moment().diff(Moment(cnt.time), "minutes")}mins`
+              `${cnt.count}@${Moment().diff(Moment(cnt.time), "minutes")}mins`
           )
           .join(" | "),
         inline: true,
