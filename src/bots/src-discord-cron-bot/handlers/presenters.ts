@@ -341,16 +341,24 @@ export const buildMarketEmbed = (
   path: string
 ): MessageEmbed => {
   const { collection, currentListings, marketSummary } = tracker;
+  const { floorCounts } = marketSummary;
   const description = marketSumStr(marketSummary);
+
   const embed = new MessageEmbed()
     .setColor("#0099ff")
     .setTitle(`${collection} Market Summary`)
     .setURL(getBibleLink(path))
     .setAuthor("Degen Bible Bot")
     .setDescription(description)
+    .addFields({
+      name: `Floor Counts`,
+      value: floorCounts.map((cnt) => `${cnt.count}@${cnt.price}`).join(" | "),
+      inline: true,
+    })
     .setTimestamp();
 
-  currentListings.forEach((listing) => {
+  embed.addFields({ name: "Best Value Listings:", value: "---", inline: true });
+  currentListings.slice(0, 4).forEach((listing) => {
     embed.addField(getShortListingUrl(listing), getShortListing(listing));
   });
 
