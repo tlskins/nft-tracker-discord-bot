@@ -197,11 +197,11 @@ const createCollRoles = async (server, collMap) => {
   }
 
   // create pump role
-  if ( !collMap.suggestedRole ) {
+  if ( !collMap.pumpRole ) {
     const roleName = `${ collMap.collection } Pump`
     const role = await server.roles.create({
       name: roleName,
-      color: 'GREEN',
+      color: 'RED',
     })
     console.log('New Pump Role: ', role.id)
 
