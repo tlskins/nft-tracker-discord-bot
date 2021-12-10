@@ -194,8 +194,9 @@ class CronBot {
     // broadcast pump alert
     if (
       saleCountSlope < 0 && // sales are increasing
-      floorCounts.length > 0 &&
-      floorCounts[0].count <= 3 && // floor has 3 or less listings
+      floorCounts.length > 1 && // has at least 2 floor levels within bottom 50 listings
+      floorCounts[0].count <= 3 && // floor 0 has 3 or fewer listings
+      floorCounts[1].count <= 8 && // floor 1 has 8 or fewer listings
       floorCountSlope > 0 && // lower floors are thinner
       listingCountSlope > 0 // listings are decreasing
     ) {
