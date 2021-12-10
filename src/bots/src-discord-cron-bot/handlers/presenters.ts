@@ -357,7 +357,6 @@ export const buildMarketEmbed = (
     })
     .setTimestamp();
 
-  embed.addFields({ name: "Best Value Listings:", value: "---", inline: true });
   currentListings.slice(0, 4).forEach((listing) => {
     embed.addField(getShortListingUrl(listing), getShortListing(listing));
   });
