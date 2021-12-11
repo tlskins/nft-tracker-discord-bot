@@ -250,7 +250,6 @@ class CronBot {
       if (pinMsgId) {
         console.log(`updating ${apiPath} pin...`);
         await webhook.editMessage(pinMsgId, mktMsg);
-        console.log(`updated ${apiPath} pin!`);
 
         // temp add new role emojis
         // const msg: Message = (await webhook.fetchMessage(pinMsgId)) as Message;
@@ -299,7 +298,9 @@ class CronBot {
       }
       idx++;
     });
-    console.log(`Processing batch ${batch} with size ${promiseArr.length}...`);
+    console.log(
+      `*** Processing batch ${batch} with size ${promiseArr.length}...`
+    );
     const promises = Promise.all(promiseArr);
 
     const trackers = await promises;
