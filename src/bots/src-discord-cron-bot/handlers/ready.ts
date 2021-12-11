@@ -170,8 +170,13 @@ class CronBot {
     }
 
     const { currentBest, currentFloor, marketSummary } = tracker;
-    const { saleCountSlope, floorCounts, floorCountSlope, listingCountSlope } =
-      marketSummary;
+    const {
+      saleCountSlope,
+      floorCounts,
+      floorCountSlope,
+      listingCountSlope,
+      floorHistorySlope,
+    } = marketSummary;
 
     // broadcast best
     if (currentBest.isNew) {
@@ -201,11 +206,13 @@ class CronBot {
       floorCounts.length > 1 && // has at least 2 floor levels within bottom 50 listings
       floorCountSlope > 0 && // lower floors are thinner
       listingCountSlope > 0 && // listings are decreasing
+      floorHistorySlope > 0 && // floors are decreasing
       // velocity checkers
-      floorCounts[0].count <= 3 && // floor 0 has 3 or fewer listings
-      (floorCounts[1].count <= 7 || // floor 1 has 8 or fewer listings
+      floorCounts[0].count <= 5 && // floor 0 has 5 or fewer listings
+      (floorCounts[1].count <= 7 || // floor 1 has 7 or fewer listings
         saleCountSlope < -0.1 || // high velocity sales
-        listingCountSlope > 0.1) // high velocity de-listings
+        listingCountSlope > 0.1 || // high velocity de-listings
+        floorHistorySlope > 0.2) // high velocity floors decreasing
     ) {
       // send to collection channel
       const pumpEmbed = buildPumpEmbed(tracker);

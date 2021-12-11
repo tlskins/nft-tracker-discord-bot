@@ -77,10 +77,12 @@ export interface MarketSummary {
   saleCounts: ISaleCount[];
   floorCounts: IFloorCount[];
   listingCounts: IListingCount[];
+  floorHistories: IFloorHistory[];
 
   saleCountSlope: number;
   floorCountSlope: number;
   listingCountSlope: number;
+  floorHistorySlope: number;
 }
 
 export interface ISaleCount {
@@ -96,6 +98,11 @@ export interface IListingCount {
 export interface IFloorCount {
   price: number;
   count: number;
+}
+
+export interface IFloorHistory {
+  time: string;
+  floor: number;
 }
 
 export interface MarketWindowSummary {

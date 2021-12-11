@@ -6,7 +6,7 @@ import {
   ICollectionMapping,
 } from "../../../types";
 
-import { MessageEmbed } from "discord.js";
+import { MessageEmbed, EmbedFieldData } from "discord.js";
 import Moment from "moment";
 
 export const getTopAttrsTxt = (listing: MarketListing): string => {
@@ -216,54 +216,72 @@ export const buildPumpTitle = (
   return `${mentions}Pump Alert! - ${descrip}`;
 };
 
-export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
-  const { collection, currentFloor, marketSummary } = tracker;
+export const buildMarketEmbedFields = (
+  marketSummary: MarketSummary
+): EmbedFieldData[] => {
   const {
     floorCounts,
     floorCountSlope,
-    listingCounts,
-    listingCountSlope,
+    floorHistories,
+    floorHistorySlope,
     saleCounts,
     saleCountSlope,
   } = marketSummary;
+  const now = Moment();
+
+  return [
+    {
+      name: `Floor Counts (Slope ${floorCountSlope.toFixed(2)})`,
+      value: floorCounts.map((cnt) => `${cnt.count}@${cnt.price}`).join(" | "),
+      inline: true,
+    },
+    {
+      name: `Floor History (Slope ${floorHistorySlope.toFixed(2)})`,
+      value: floorHistories
+        .map(
+          (hist) =>
+            `${hist.floor.toFixed(2)}@${now.diff(
+              Moment(hist.time),
+              "minutes"
+            )}mins`
+        )
+        .join(" | "),
+      inline: true,
+    },
+    {
+      name: `Sales Counts (Slope ${saleCountSlope.toFixed(2)})`,
+      value: saleCounts
+        .slice(0, 5)
+        .map(
+          (cnt) => `${cnt.count}@${now.diff(Moment(cnt.time), "minutes")}mins`
+        )
+        .join(" | "),
+      inline: true,
+    },
+  ] as EmbedFieldData[];
+};
+
+export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
+  const { collection, currentFloor, marketSummary } = tracker;
+  const { listingCounts, listingCountSlope } = marketSummary;
 
   const embed = new MessageEmbed()
     .setColor("#ff0000")
     .setTitle(`${collection} Pump Alert`)
     .setAuthor("Degen Bible Bot")
-    .addFields(
-      {
-        name: `Floor Counts (Slope ${floorCountSlope.toFixed(2)})`,
-        value: floorCounts
-          .map((cnt) => `${cnt.count}@${cnt.price}`)
-          .join(" | "),
-        inline: true,
-      },
-      {
-        name: `Sales Counts (Slope ${saleCountSlope.toFixed(2)})`,
-        value: saleCounts
-          .slice(0, 5)
-          .map(
-            (cnt) =>
-              `${cnt.count}in${Moment().diff(Moment(cnt.time), "minutes")}mins`
-          )
-          .join(" | "),
-        inline: true,
-      },
-      {
-        name: `Listing Counts (Slope ${listingCountSlope.toFixed(2)})`,
-        value: listingCounts
-          .filter((_, i) => i % 2 === 0)
-          .map(
-            (cnt) =>
-              `${cnt.count}@${Moment().diff(Moment(cnt.time), "minutes")}mins`
-          )
-          .join(" | "),
-        inline: true,
-      }
-    )
+    .addFields(...buildMarketEmbedFields(marketSummary), {
+      name: `Listing Counts (Slope ${listingCountSlope.toFixed(2)})`,
+      value: listingCounts
+        .filter((_, i) => i % 2 === 0)
+        .map(
+          (cnt) =>
+            `${cnt.count}@${Moment().diff(Moment(cnt.time), "minutes")}mins`
+        )
+        .join(" | "),
+      inline: true,
+    })
     .setImage(currentFloor.image)
-    .setFooter(`Floor: ${currentFloor.url}`)
+    .setFooter(currentFloor.url)
     .setURL(currentFloor.url)
     .setTimestamp();
 
@@ -284,7 +302,7 @@ export const buildFloorTitle = (
 };
 
 export const buildFloorEmbed = (tracker: CollectionTracker): MessageEmbed => {
-  const { collection, currentFloor } = tracker;
+  const { collection, currentFloor, marketSummary } = tracker;
 
   const embed = new MessageEmbed()
     .setColor("#ffff00")
@@ -300,16 +318,7 @@ export const buildFloorEmbed = (tracker: CollectionTracker): MessageEmbed => {
         value: `${currentFloor.title}`,
         inline: true,
       },
-      {
-        name: `Sugg Price`,
-        value: getSuggestedPriceTxt(currentFloor),
-        inline: true,
-      },
-      {
-        name: `Top Traits`,
-        value: getTopAttrsTxt(currentFloor),
-        inline: true,
-      }
+      ...buildMarketEmbedFields(marketSummary)
     )
     .setImage(currentFloor.image)
     .setFooter(`Listing: ${currentFloor.url}`)
@@ -330,7 +339,6 @@ export const buildMarketEmbed = (
   path: string
 ): MessageEmbed => {
   const { collection, currentListings, marketSummary } = tracker;
-  const { floorCounts } = marketSummary;
   const description = marketSumStr(marketSummary);
 
   const embed = new MessageEmbed()
@@ -339,11 +347,7 @@ export const buildMarketEmbed = (
     .setURL(getBibleLink(path))
     .setAuthor("Degen Bible Bot")
     .setDescription(description)
-    .addFields({
-      name: `Floor Counts`,
-      value: floorCounts.map((cnt) => `${cnt.count}@${cnt.price}`).join(" | "),
-      inline: true,
-    })
+    .addFields(...buildMarketEmbedFields(marketSummary))
     .setTimestamp();
 
   currentListings.slice(0, 4).forEach((listing) => {
