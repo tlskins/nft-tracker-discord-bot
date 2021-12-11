@@ -52,9 +52,13 @@ class CronBot {
   }
 
   handleBot(): void {
-    syncSubscriptions(this.sendErrMsg("sync-subs-err"));
     this.sendMessages();
-    this.checkTokenAlerts();
+    const min = Moment().minute();
+    // run every 5 minutes
+    if (min % 5 === 0) {
+      syncSubscriptions(this.sendErrMsg("sync-subs-err"));
+      this.checkTokenAlerts();
+    }
   }
 
   async sendDm(userId: string, message: string) {
@@ -294,6 +298,7 @@ class CronBot {
       }
       idx++;
     });
+    console.log(`Processing batch ${min} with size ${promiseArr.length}...`);
     const promises = Promise.all(promiseArr);
 
     const trackers = await promises;
@@ -323,7 +328,6 @@ class CronBot {
       if (pinMsgId) {
         console.log(`updating markets pin...`);
         await webhook.editMessage(pinMsgId, mktMsg);
-        console.log(`updated markets pin!`);
       } else {
         console.log(`markets pin not found sending to channel...`);
         const sentMsg = await webhook.send(mktMsg);
