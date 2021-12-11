@@ -77,7 +77,7 @@ export interface MarketSummary {
   saleCounts: ISaleCount[];
   floorCounts: IFloorCount[];
   listingCounts: IListingCount[];
-  floorHistories: IFloorHistory[];
+  floorHistory: IFloorHistory[];
 
   saleCountSlope: number;
   floorCountSlope: number;
