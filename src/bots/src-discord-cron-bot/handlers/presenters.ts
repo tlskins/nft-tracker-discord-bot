@@ -232,30 +232,34 @@ export const buildMarketEmbedFields = (
   return [
     {
       name: `Floor Counts (Slope ${floorCountSlope.toFixed(2)})`,
-      value: floorCounts.map((cnt) => `${cnt.count}@${cnt.price}`).join(" | "),
+      value:
+        floorCounts.map((cnt) => `${cnt.count}@${cnt.price}`).join(" | ") ||
+        "None",
       inline: true,
     },
     {
       name: `Floor History (Slope ${floorHistorySlope.toFixed(2)})`,
-      value: floorHistory
-        .map(
-          (hist) =>
-            `${hist.floor.toFixed(2)}@${now.diff(
-              Moment(hist.time),
-              "minutes"
-            )}mins`
-        )
-        .join(" | "),
+      value:
+        floorHistory
+          .map(
+            (hist) =>
+              `${hist.floor.toFixed(2)}@${now.diff(
+                Moment(hist.time),
+                "minutes"
+              )}mins`
+          )
+          .join(" | ") || "None",
       inline: true,
     },
     {
       name: `Sales Counts (Slope ${saleCountSlope.toFixed(2)})`,
-      value: saleCounts
-        .slice(0, 5)
-        .map(
-          (cnt) => `${cnt.count}@${now.diff(Moment(cnt.time), "minutes")}mins`
-        )
-        .join(" | "),
+      value:
+        saleCounts
+          .slice(0, 5)
+          .map(
+            (cnt) => `${cnt.count}@${now.diff(Moment(cnt.time), "minutes")}mins`
+          )
+          .join(" | ") || "None",
       inline: true,
     },
   ] as EmbedFieldData[];
@@ -271,13 +275,14 @@ export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
     .setAuthor("Degen Bible Bot")
     .addFields(...buildMarketEmbedFields(marketSummary), {
       name: `Listing Counts (Slope ${listingCountSlope.toFixed(2)})`,
-      value: listingCounts
-        .filter((_, i) => i % 2 === 0)
-        .map(
-          (cnt) =>
-            `${cnt.count}@${Moment().diff(Moment(cnt.time), "minutes")}mins`
-        )
-        .join(" | "),
+      value:
+        listingCounts
+          .filter((_, i) => i % 2 === 0)
+          .map(
+            (cnt) =>
+              `${cnt.count}@${Moment().diff(Moment(cnt.time), "minutes")}mins`
+          )
+          .join(" | ") || "None",
       inline: true,
     })
     .setImage(currentFloor.image)
