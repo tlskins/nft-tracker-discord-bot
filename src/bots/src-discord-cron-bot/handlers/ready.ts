@@ -203,10 +203,20 @@ class CronBot {
         saleCountSlope < -0.1 || // high velocity sales
         listingCountSlope > 0.1) // high velocity de-listings
     ) {
-      const pumpTitle = buildPumpTitle(tracker, collMap);
+      // send to collection channel
       const pumpEmbed = buildPumpEmbed(tracker);
       await webhook.send({
-        content: pumpTitle,
+        content: buildPumpTitle(tracker, collMap, true),
+        username: "Degen Bible Bot",
+        embeds: [pumpEmbed],
+      });
+
+      // send to market sum
+      const mktSumHook = await this._getWebhook(
+        process.env.CHANNEL_MKT_SUMMARY as string
+      );
+      await mktSumHook.send({
+        content: buildPumpTitle(tracker, collMap, false),
         username: "Degen Bible Bot",
         embeds: [pumpEmbed],
       });
@@ -275,9 +285,14 @@ class CronBot {
   }
 
   async sendMessages(): Promise<void> {
+    const min = Moment().minute();
     const promiseArr = [] as Promise<CollectionTracker | undefined>[];
+    let idx = 0;
     GetGlobalCollMaps().forEach((collMap) => {
-      promiseArr.push(this.handleMessage(collMap));
+      if (min % 5 === idx) {
+        promiseArr.push(this.handleMessage(collMap));
+      }
+      idx++;
     });
     const promises = Promise.all(promiseArr);
 
@@ -286,38 +301,6 @@ class CronBot {
       .map((tracker) => tracker?.marketSummary)
       .filter((sum) => !!sum);
     const mktSumKey = "mktSummaries";
-
-    // get overall best listing
-    // const skippedColls = [] as string[];
-    // let newOvrBest = undefined as CollectionTracker | undefined;
-    // trackers.forEach((tracker) => {
-    //   if (
-    //     !skippedColls.includes(tracker?.collection || "") &&
-    //     tracker &&
-    //     (!newOvrBest ||
-    //       tracker.currentBest?.score > newOvrBest.currentBest.score)
-    //   ) {
-    //     newOvrBest = tracker;
-    //   }
-    // });
-
-    // if new overall best post to market summary
-    // if (
-    //   !!newOvrBest &&
-    //   (!this.lastOvrBest ||
-    //     newOvrBest.currentBest?.title !== this.lastOvrBest.currentBest?.title)
-    // ) {
-    //   const ovrBestHook = await this._getWebhook(
-    //     process.env.CHANNEL_MKT_SUMMARY as string
-    //   );
-    //   const embed = buildBestEmbed(newOvrBest, newOvrBest?.apiColl || "");
-    //   await ovrBestHook.send({
-    //     content: "New Overall Best",
-    //     username: "Degen Bible Bot",
-    //     embeds: [embed],
-    //   });
-    //   this.lastOvrBest = newOvrBest;
-    // }
 
     // send / update market msg
     if (shouldBroadcast(this.broadcasts.get(mktSumKey))) {
