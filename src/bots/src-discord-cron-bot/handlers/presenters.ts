@@ -222,7 +222,7 @@ export const buildMarketEmbedFields = (
   const {
     floorCounts,
     floorCountSlope,
-    floorHistories,
+    floorHistory,
     floorHistorySlope,
     saleCounts,
     saleCountSlope,
@@ -237,7 +237,7 @@ export const buildMarketEmbedFields = (
     },
     {
       name: `Floor History (Slope ${floorHistorySlope.toFixed(2)})`,
-      value: floorHistories
+      value: floorHistory
         .map(
           (hist) =>
             `${hist.floor.toFixed(2)}@${now.diff(
