@@ -294,7 +294,7 @@ class CronBot {
     const promiseArr = [] as Promise<CollectionTracker | undefined>[];
     let idx = 0;
     GetGlobalCollMaps().forEach((collMap) => {
-      if (idx == batch) {
+      if (idx % 5 === batch) {
         promiseArr.push(this.handleMessage(collMap));
       }
       idx++;
