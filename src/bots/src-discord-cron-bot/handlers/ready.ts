@@ -290,15 +290,16 @@ class CronBot {
 
   async sendMessages(): Promise<void> {
     const min = Moment().minute();
+    const batch = min % 5;
     const promiseArr = [] as Promise<CollectionTracker | undefined>[];
     let idx = 0;
     GetGlobalCollMaps().forEach((collMap) => {
-      if (min % 5 === idx) {
+      if (idx == batch) {
         promiseArr.push(this.handleMessage(collMap));
       }
       idx++;
     });
-    console.log(`Processing batch ${min} with size ${promiseArr.length}...`);
+    console.log(`Processing batch ${batch} with size ${promiseArr.length}...`);
     const promises = Promise.all(promiseArr);
 
     const trackers = await promises;
