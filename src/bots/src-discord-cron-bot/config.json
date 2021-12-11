@@ -2,7 +2,7 @@
   "timezone": "America/New_York",
   "rules": [
     {
-      "cronExpression": "*/5 * * * *",
+      "cronExpression": "*/1 * * * *",
       "channelPolicy": "all",
       "messagePolicy": "all",
       "reactionPolicy": "single",
