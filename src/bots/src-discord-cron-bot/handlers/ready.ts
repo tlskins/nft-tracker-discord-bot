@@ -255,13 +255,14 @@ class CronBot {
       const trackerUpds = { id: tracker.id } as UpdateCollectionTracker;
       const pinMsgId = collMap.pinMsgId;
       if (pinMsgId) {
-        console.log(`updating ${apiPath} pin...`);
+        console.log(`updating ${apiPath} pinid ${pinMsgId}...`);
         await webhook.editMessage(pinMsgId, mktMsg);
 
         // temp add new role emojis
         // const msg: Message = (await webhook.fetchMessage(pinMsgId)) as Message;
         // msg.react("⏰");
       } else {
+        console.log(`new pint for ${apiPath}...`);
         const sentMsg = await webhook.send(mktMsg);
         const msg: Message = (await webhook.fetchMessage(
           sentMsg.id
