@@ -179,7 +179,7 @@ class CronBot {
     } = marketSummary;
 
     // broadcast best
-    if (currentBest.isNew) {
+    if (currentBest?.isNew) {
       const bestEmbed = buildBestEmbed(tracker, apiPath);
       const bestTitle = buildBestTitle(tracker, collMap);
       await webhook.send({
@@ -190,7 +190,7 @@ class CronBot {
     }
 
     // broadcast floor
-    if (currentFloor.isNew) {
+    if (currentFloor?.isNew) {
       const floorEmbed = buildFloorEmbed(tracker);
       const floorTitle = buildFloorTitle(tracker, collMap);
       await webhook.send({

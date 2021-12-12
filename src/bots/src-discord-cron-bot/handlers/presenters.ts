@@ -113,8 +113,9 @@ export const getBestListing = (listing: MarketListing): string => {
 };
 
 export const getListingPrefix = (listing: MarketListing): string => {
-  let listPrefix = `${listing.rarity}`;
+  let listPrefix = `${listing.rarity || ""}`;
   if (listing.rank) listPrefix += ` | Rank ${listing.rank}`;
+  if (!listPrefix) listPrefix = listing.title;
 
   return listPrefix;
 };
