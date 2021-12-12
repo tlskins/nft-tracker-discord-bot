@@ -212,7 +212,7 @@ class CronBot {
       (floorCounts[1].count <= 7 || // floor 1 has 7 or fewer listings
         saleCountSlope < -0.1 || // high velocity sales
         listingCountSlope > 0.1 || // high velocity de-listings
-        floorHistorySlope < -0.01) // high velocity floors decreasing
+        floorHistorySlope < -0.005) // high velocity floors decreasing
     ) {
       // send to collection channel
       const pumpEmbed = buildPumpEmbed(tracker);
