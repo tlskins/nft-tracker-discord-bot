@@ -253,7 +253,7 @@ class CronBot {
       };
 
       const trackerUpds = { id: tracker.id } as UpdateCollectionTracker;
-      const pinMsgId = tracker.pinnedMsgId;
+      const pinMsgId = collMap.pinMsgId;
       if (pinMsgId) {
         console.log(`updating ${apiPath} pin...`);
         await webhook.editMessage(pinMsgId, mktMsg);
@@ -272,7 +272,6 @@ class CronBot {
         msg.react("⏰");
 
         // update pinned msg id
-        trackerUpds.pinnedMsgId = msg.id;
         const updCollMap = await updateCollMap(
           id,
           { id, pinMsgId: msg.id },

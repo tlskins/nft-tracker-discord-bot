@@ -35,7 +35,6 @@ export interface CollectionTracker {
   lastUpdated: string;
   marketSummary: MarketSummary;
 
-  pinnedMsgId: string;
   lastBroadcastAt: string;
   lastErrCastAt: string;
 
@@ -51,7 +50,6 @@ export interface CollectionTracker {
 export interface UpdateCollectionTracker {
   id: string;
 
-  pinnedMsgId?: string;
   lastBroadcastAt?: string;
   lastErrCastAt?: string;
 }
