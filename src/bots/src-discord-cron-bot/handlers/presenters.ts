@@ -139,7 +139,7 @@ export const buildBestTitle = (
   tracker: CollectionTracker,
   mapping: ICollectionMapping
 ): string => {
-  let mentions = "";
+  let mentions = `<@&${process.env.ALL_SUGG_ROLE_ID}> `;
   if (mapping.suggestedRole) {
     mentions = `<@&${mapping.suggestedRole}> `;
   }
@@ -302,7 +302,7 @@ export const buildFloorTitle = (
   tracker: CollectionTracker,
   mapping: ICollectionMapping
 ): string => {
-  let mentions = "";
+  let mentions = `<@&${process.env.ALL_FLOOR_ROLE_ID}> `;
   if (mapping.floorRole) {
     mentions = `<@&${mapping.floorRole}> `;
   }

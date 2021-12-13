@@ -71,6 +71,18 @@ export const StartListener = async (listener) => {
     console.log('discordId: ', user.id)
     console.log('emoji: ', reaction._emoji.name)
 
+    // add ALL roles
+    if ( reaction.message.id === process.env.MARKETS_PIN_ID ) {
+      if ( reaction._emoji.name === "🧹" ) {
+        msgUser.roles.add(process.env.ALL_FLOOR_ROLE_ID)
+      } else if ( reaction._emoji.name === "📊" ) {
+        msgUser.roles.add(process.env.ALL_SUGG_ROLE_ID)
+      } else if ( reaction._emoji.name === "⏰" ) {
+        msgUser.roles.add(process.env.ALL_PUMP_ROLE_ID)
+      }
+      return
+    }
+
     let collMap = FindGlobalCollMapByPin( reaction.message.id )
     if ( !collMap ) return
   
@@ -97,6 +109,18 @@ export const StartListener = async (listener) => {
     console.log('messageId: ', reaction.message.id)
     console.log('discordId: ', user.id)
     console.log('emoji: ', reaction._emoji.name)
+
+    // add ALL roles
+    if ( reaction.message.id === process.env.MARKETS_PIN_ID ) {
+      if ( reaction._emoji.name === "🧹" ) {
+        msgUser.roles.remove(process.env.ALL_FLOOR_ROLE_ID)
+      } else if ( reaction._emoji.name === "📊" ) {
+        msgUser.roles.remove(process.env.ALL_SUGG_ROLE_ID)
+      } else if ( reaction._emoji.name === "⏰" ) {
+        msgUser.roles.remove(process.env.ALL_PUMP_ROLE_ID)
+      }
+      return
+    }
 
     let collMap = FindGlobalCollMapByPin( reaction.message.id )
     if ( !collMap ) return
