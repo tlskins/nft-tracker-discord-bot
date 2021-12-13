@@ -141,7 +141,7 @@ export const buildBestTitle = (
 ): string => {
   let mentions = `<@&${process.env.ALL_SUGG_ROLE_ID}> `;
   if (mapping.suggestedRole) {
-    mentions = `<@&${mapping.suggestedRole}> `;
+    mentions += `<@&${mapping.suggestedRole}> `;
   }
   return `${mentions}New Best @ ${
     tracker.currentBest.price?.toFixed(2) || "?"
@@ -304,7 +304,7 @@ export const buildFloorTitle = (
 ): string => {
   let mentions = `<@&${process.env.ALL_FLOOR_ROLE_ID}> `;
   if (mapping.floorRole) {
-    mentions = `<@&${mapping.floorRole}> `;
+    mentions += `<@&${mapping.floorRole}> `;
   }
   return `${mentions}New Floor @ ${
     tracker.currentFloor.price?.toFixed(2) || "?"
