@@ -27,7 +27,7 @@ export const getCollectionMappings = async (
     return out;
   } catch (err) {
     const errMsg = `error getting collection mappings: ${err.response?.data?.message}`;
-    console.log(errMsg);
+    console.error(errMsg);
     handleErr(errMsg);
   }
 };
@@ -51,7 +51,7 @@ export const getMarketListings = async (
       return;
     }
     const errMsg = `error getting ${collection} market listings: ${err.response?.data?.message}`;
-    console.log(errMsg);
+    console.error(errMsg);
     handleErr(errMsg);
   }
 };
@@ -64,7 +64,7 @@ export const syncSubscriptions = async (
     await rest.post("/subscriptions/sync");
   } catch (err) {
     const errMsg = `error syncing subs: ${err.response?.data?.message}`;
-    console.log(errMsg);
+    console.error(errMsg);
     handleErr(errMsg);
   }
 };
@@ -79,7 +79,7 @@ export const getTokenAlerts = async (
     return resp.data?.trackers;
   } catch (err) {
     const errMsg = `error getting token alerts: ${err.response?.data?.message}`;
-    console.log(errMsg);
+    console.error(errMsg);
     handleErr(errMsg);
   }
 };
@@ -93,7 +93,7 @@ export const resetTokenAlerts = async (
     await rest.delete("/alert-token-trackers", { data: { ids } });
   } catch (err) {
     const errMsg = `error resetting token alerts: ${err.response?.data?.message}`;
-    console.log(errMsg);
+    console.error(errMsg);
     handleErr(errMsg);
   }
 };
@@ -112,7 +112,7 @@ export const updateTracker = async (
     return collectionData.data.tracker;
   } catch (err) {
     const errMsg = `error updating ${collection} tracker: ${err.response?.data?.message}`;
-    console.log(errMsg);
+    console.error(errMsg);
     handleErr(errMsg);
   }
 };
@@ -131,7 +131,7 @@ export const updateCollMap = async (
     return collectionData.data.mapping;
   } catch (err) {
     const errMsg = `error updating ${collId} mapping: ${err.response?.data?.message}`;
-    console.log(errMsg);
+    console.error(errMsg);
     handleErr(errMsg);
   }
 };

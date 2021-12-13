@@ -77,12 +77,12 @@ class CronBot {
       content: message,
       username: "Degen Bible Bot",
     });
-    console.log(`Error: ${message}`);
+    console.error(`Error: ${message}`);
   }
 
   sendErrMsg = (castKey: string) => async (message: string) => {
     const lastErrCast = this.broadcasts.get(castKey);
-    console.log(`sending err "${message}" - lastAt ${lastErrCast?.format()}`);
+    console.error(`sending err "${message}" - lastAt ${lastErrCast?.format()}`);
     if (shouldBroadcastErr(lastErrCast)) {
       this.postTrackerErr(message);
       this.broadcasts.set(castKey, Moment());

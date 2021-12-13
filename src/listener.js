@@ -149,7 +149,7 @@ const startVerification = async (req) => {
   try {
     await rest.put("/users/verify", req);
   } catch( err ) {
-    console.log("error getting verification: ", err.response?.data)
+    console.error("error getting verification: ", err.response?.data)
   }
 };
 
@@ -158,7 +158,7 @@ const updateRole = async ({ discordId, isOG }) => {
   try {
     await rest.put("/subscriptions/sync", { discordId, isOG });
   } catch( err ) {
-    console.log("error syncing og role: ", err.response?.data)
+    console.error("error syncing og role: ", err.response?.data)
   }
 };
 
@@ -167,7 +167,7 @@ const syncAllMembershipRoles = async () => {
   try {
     await rest.post("/subscriptions/sync");
   } catch( err ) {
-    console.log("error sync membership roles: ", err.response?.data)
+    console.error("error sync membership roles: ", err.response?.data)
   }
 };
 
@@ -194,7 +194,7 @@ const createCollRoles = async (server, collMap) => {
     const updCollMap = await updateCollMap(
       collMap.id,
       { id: collMap.id, floorRole: role.id },
-      errMsg => console.log(`Err updating collection map: ${ errMsg }`)
+      errMsg => console.error(`Err updating collection map: ${ errMsg }`)
     );
     if (updCollMap) UpdateGlobalCollMap(updCollMap);
     created = true
@@ -212,7 +212,7 @@ const createCollRoles = async (server, collMap) => {
     const updCollMap = await updateCollMap(
       collMap.id,
       { id: collMap.id, suggestedRole: role.id },
-      errMsg => console.log(`Err updating collection map: ${ errMsg }`)
+      errMsg => console.error(`Err updating collection map: ${ errMsg }`)
     );
     if (updCollMap) UpdateGlobalCollMap(updCollMap);
     created = true
@@ -230,7 +230,7 @@ const createCollRoles = async (server, collMap) => {
     const updCollMap = await updateCollMap(
       collMap.id,
       { id: collMap.id, pumpRole: role.id },
-      errMsg => console.log(`Err updating collection map: ${ errMsg }`)
+      errMsg => console.error(`Err updating collection map: ${ errMsg }`)
     );
     if (updCollMap) UpdateGlobalCollMap(updCollMap);
     created = true
