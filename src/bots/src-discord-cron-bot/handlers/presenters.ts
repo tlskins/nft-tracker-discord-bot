@@ -208,13 +208,17 @@ export const buildPumpTitle = (
     }
   }
   const { saleCounts } = tracker.marketSummary;
-  let descrip = "0 sales in the last 0 mins";
+  let descrip = "0 sold @ 0 mins";
   if (saleCounts.length > 0) {
     const count = saleCounts[0].count;
     const mins = Moment().diff(Moment(saleCounts[0].time), "minutes");
-    descrip = `${count} sales in the last ${mins} mins`;
+    descrip = `${count} sold @ ${mins} mins`;
   }
-  return `${mentions}Pump Alert! - ${descrip}`;
+  let floor = "Floor @ 0";
+  if (tracker.currentFloor) {
+    floor = `Floor @ ${tracker.currentFloor.price.toFixed(2)}`;
+  }
+  return `${mentions}Pump Alert! - ${floor} | ${descrip}`;
 };
 
 export const buildMarketEmbedFields = (
