@@ -231,6 +231,8 @@ export const buildMarketEmbedFields = (
     floorHistorySlope,
     saleCounts,
     saleCountSlope,
+    listingCountSlope,
+    listingCounts,
   } = marketSummary;
   const now = Moment();
 
@@ -267,18 +269,7 @@ export const buildMarketEmbedFields = (
           .join(" | ") || "None",
       inline: true,
     },
-  ] as EmbedFieldData[];
-};
-
-export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
-  const { collection, currentFloor, marketSummary } = tracker;
-  const { listingCounts, listingCountSlope } = marketSummary;
-
-  const embed = new MessageEmbed()
-    .setColor("#ff0000")
-    .setTitle(`${collection} Pump Alert`)
-    .setAuthor("Degen Bible Bot")
-    .addFields(...buildMarketEmbedFields(marketSummary), {
+    {
       name: `Listing Counts (Slope ${listingCountSlope.toFixed(2)})`,
       value:
         listingCounts
@@ -289,7 +280,18 @@ export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
           )
           .join(" | ") || "None",
       inline: true,
-    })
+    },
+  ] as EmbedFieldData[];
+};
+
+export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
+  const { collection, currentFloor, marketSummary } = tracker;
+
+  const embed = new MessageEmbed()
+    .setColor("#ff0000")
+    .setTitle(`${collection} Pump Alert`)
+    .setAuthor("Degen Bible Bot")
+    .addFields(...buildMarketEmbedFields(marketSummary))
     .setImage(currentFloor.image)
     .setFooter(currentFloor.url)
     .setURL(currentFloor.url)
