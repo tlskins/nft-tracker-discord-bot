@@ -70,6 +70,8 @@ export const StartListener = async (listener) => {
     console.log('messageId: ', reaction.message.id)
     console.log('discordId: ', user.id)
     console.log('emoji: ', reaction._emoji.name)
+    const server = listener.guilds.cache.get(process.env.SERVER_ID);
+    const msgUser = server.members.cache.get(user.id);
 
     // add ALL roles
     if ( reaction.message.id === process.env.MARKETS_PIN_ID ) {
@@ -86,9 +88,6 @@ export const StartListener = async (listener) => {
     let collMap = FindGlobalCollMapByPin( reaction.message.id )
     if ( !collMap ) return
   
-    const server = listener.guilds.cache.get(process.env.SERVER_ID);
-    const msgUser = server.members.cache.get(user.id);
-
     // create role if doesnt exist
     const hasNewRoles = await createCollRoles(server, collMap)
     if ( hasNewRoles ) collMap = GetGlobalCollMap( collMap.id )
@@ -109,6 +108,8 @@ export const StartListener = async (listener) => {
     console.log('messageId: ', reaction.message.id)
     console.log('discordId: ', user.id)
     console.log('emoji: ', reaction._emoji.name)
+    const server = listener.guilds.cache.get(process.env.SERVER_ID);
+    const msgUser = server.members.cache.get(user.id);
 
     // add ALL roles
     if ( reaction.message.id === process.env.MARKETS_PIN_ID ) {
@@ -124,9 +125,6 @@ export const StartListener = async (listener) => {
 
     let collMap = FindGlobalCollMapByPin( reaction.message.id )
     if ( !collMap ) return
-
-    const server = listener.guilds.cache.get(process.env.SERVER_ID);
-    const msgUser = server.members.cache.get(user.id);
 
     // create role if doesnt exist
     const hasNewRoles = await createCollRoles(server, collMap)
