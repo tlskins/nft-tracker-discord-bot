@@ -45,7 +45,7 @@ export const getMarketListings = async (
     return collectionData.data.tracker;
   } catch (err) {
     if (Moment().diff(startTime, "seconds") >= 5.9) {
-      console.log(
+      console.error(
         `Request for ${collection} timedout - supressing error broadcast`
       );
       return;
