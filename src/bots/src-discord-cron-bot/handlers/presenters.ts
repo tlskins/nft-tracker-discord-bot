@@ -207,7 +207,7 @@ export const buildPumpTitle = (
       mentions += `<@&${mapping.pumpRole}> `;
     }
   }
-  const { saleCounts } = tracker.marketSummary;
+  const { saleCounts, predictedFloor } = tracker.marketSummary;
   let descrip = "0 sold @ 0 mins";
   if (saleCounts.length > 0) {
     const count = saleCounts[0].count;
@@ -218,7 +218,9 @@ export const buildPumpTitle = (
   if (tracker.currentFloor) {
     floor = `Floor @ ${tracker.currentFloor.price.toFixed(2)}`;
   }
-  return `${mentions}Pump Alert! - ${floor} | ${descrip}`;
+  return `${mentions}Pump Alert! - Now: ${floor} Pred: ${predictedFloor.toFixed(
+    2
+  )}  | ${descrip}`;
 };
 
 export const buildMarketEmbedFields = (
@@ -286,11 +288,13 @@ export const buildMarketEmbedFields = (
 
 export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
   const { collection, currentFloor, marketSummary } = tracker;
+  const { predictedFloor } = marketSummary;
 
   const embed = new MessageEmbed()
     .setColor("#ff0000")
     .setTitle(`${collection} Pump Alert`)
     .setAuthor("Degen Bible Bot")
+    .setDescription(`Predicted floor in 1hr: ${predictedFloor.toFixed(2)}`)
     .addFields(...buildMarketEmbedFields(marketSummary))
     .setImage(currentFloor.image)
     .setFooter(currentFloor.url)

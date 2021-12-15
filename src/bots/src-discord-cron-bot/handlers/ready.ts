@@ -176,6 +176,7 @@ class CronBot {
       floorCountSlope,
       listingCountSlope,
       floorHistorySlope,
+      predictedFloor,
     } = marketSummary;
 
     // broadcast best
@@ -202,17 +203,18 @@ class CronBot {
 
     // broadcast pump alert
     if (
-      saleCountSlope < 0 && // sales are increasing
-      floorCounts.length > 1 && // has at least 2 floor levels within bottom 50 listings
-      floorCountSlope > 0 && // lower floors are thinner
-      listingCountSlope > 0 && // listings are decreasing
-      floorHistorySlope <= 0 && // floors are decreasing or flat
-      // velocity checkers
-      floorCounts[0].count <= 5 && // floor 0 has 5 or fewer listings
-      (floorCounts[1].count <= 7 || // floor 1 has 7 or fewer listings
-        saleCountSlope < -0.1 || // high velocity sales
-        listingCountSlope > 0.1 || // high velocity de-listings
-        floorHistorySlope < -0.005) // high velocity floors decreasing
+      predictedFloor - currentFloor.price > 1.5 || // predicted floor goes up 1.5 in the next hour
+      (saleCountSlope < 0 && // sales are increasing
+        floorCounts.length > 1 && // has at least 2 floor levels within bottom 50 listings
+        floorCountSlope > 0 && // lower floors are thinner
+        listingCountSlope > 0 && // listings are decreasing
+        floorHistorySlope <= 0 && // floors are decreasing or flat
+        // velocity checkers
+        floorCounts[0].count <= 5 && // floor 0 has 5 or fewer listings
+        (floorCounts[1].count <= 7 || // floor 1 has 7 or fewer listings
+          saleCountSlope < -0.1 || // high velocity sales
+          listingCountSlope > 0.1 || // high velocity de-listings
+          floorHistorySlope < -0.005)) // high velocity floors decreasing
     ) {
       // send to collection channel
       const pumpEmbed = buildPumpEmbed(tracker);

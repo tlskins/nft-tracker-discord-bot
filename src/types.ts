@@ -81,6 +81,8 @@ export interface MarketSummary {
   floorCountSlope: number;
   listingCountSlope: number;
   floorHistorySlope: number;
+
+  predictedFloor: number;
 }
 
 export interface ISaleCount {
