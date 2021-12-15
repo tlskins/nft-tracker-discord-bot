@@ -299,8 +299,8 @@ export const buildMarketEmbedFields = (
 export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
   const { collection, currentFloor, marketSummary } = tracker;
   const { predictedFloor } = marketSummary;
-  const diff = currentFloor.price - predictedFloor;
-  const diffStr = diff < 0 ? `-${diff.toFixed(2)}` : `+${diff.toFixed(2)}`;
+  const diff = predictedFloor - currentFloor.price;
+  const diffStr = diff < 0 ? `${diff.toFixed(2)}` : `+${diff.toFixed(2)}`;
 
   const embed = new MessageEmbed()
     .setColor("#ff0000")
