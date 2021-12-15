@@ -235,10 +235,20 @@ export const buildMarketEmbedFields = (
     saleCountSlope,
     listingCountSlope,
     listingCounts,
+    hourMarketSummary,
+    predictedFloor,
   } = marketSummary;
   const now = Moment();
 
+  const diff = predictedFloor - hourMarketSummary.listingFloor;
+  const diffStr = diff < 0 ? `-${diff.toFixed(2)}` : `+${diff.toFixed(2)}`;
+
   return [
+    {
+      name: "Predicted Floor 1 Hr",
+      value: `${predictedFloor.toFixed(2)} SOL (${diffStr})`,
+      inline: false,
+    },
     {
       name: `Floor Counts (Slope ${floorCountSlope.toFixed(2)})`,
       value:
@@ -289,12 +299,14 @@ export const buildMarketEmbedFields = (
 export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
   const { collection, currentFloor, marketSummary } = tracker;
   const { predictedFloor } = marketSummary;
+  const diff = currentFloor.price - predictedFloor;
+  const diffStr = diff < 0 ? `-${diff.toFixed(2)}` : `+${diff.toFixed(2)}`;
 
   const embed = new MessageEmbed()
     .setColor("#ff0000")
     .setTitle(`${collection} Pump Alert`)
     .setAuthor("Degen Bible Bot")
-    .setDescription(`Predicted floor in 1hr: ${predictedFloor.toFixed(2)}`)
+    .setDescription(`Predicted floor in 1hr: ${diffStr}`)
     .addFields(...buildMarketEmbedFields(marketSummary))
     .setImage(currentFloor.image)
     .setFooter(currentFloor.url)
@@ -332,7 +344,7 @@ export const buildFloorEmbed = (tracker: CollectionTracker): MessageEmbed => {
       {
         name: `Floor Listing`,
         value: `${currentFloor.title}`,
-        inline: true,
+        inline: false,
       },
       ...buildMarketEmbedFields(marketSummary)
     )
