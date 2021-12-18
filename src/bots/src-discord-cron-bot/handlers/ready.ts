@@ -19,6 +19,8 @@ import {
   buildFloorEmbed,
   buildPumpTitle,
   buildPumpEmbed,
+  buildTraitTitle,
+  buildTraitEmbed,
   toTokenAlertMsg,
 } from "./presenters";
 import {
@@ -169,7 +171,8 @@ class CronBot {
       return;
     }
 
-    const { currentBest, currentFloor, marketSummary } = tracker;
+    const { currentBest, currentFloor, marketSummary, bestTraitListings } =
+      tracker;
     const {
       saleCountSlope,
       floorCounts,
@@ -198,6 +201,17 @@ class CronBot {
         content: floorTitle,
         username: "Degen Bible Bot",
         embeds: [floorEmbed],
+      });
+    }
+
+    // broadcast trait
+    if (bestTraitListings?.length > 0 && bestTraitListings[0].isNew) {
+      const traitEmbed = buildTraitEmbed(bestTraitListings);
+      const traitTitle = buildTraitTitle(bestTraitListings, collMap);
+      await webhook.send({
+        content: traitTitle,
+        username: "Degen Bible Bot",
+        embeds: [traitEmbed],
       });
     }
 
@@ -261,10 +275,10 @@ class CronBot {
         await webhook.editMessage(pinMsgId, mktMsg);
 
         // temp add new role emojis
-        const msg: Message = (await webhook.fetchMessage(pinMsgId)) as Message;
-        msg.react("🃏");
+        // const msg: Message = (await webhook.fetchMessage(pinMsgId)) as Message;
+        // msg.react("🃏");
       } else {
-        console.log(`new pint for ${apiPath}...`);
+        console.log(`new pin for ${apiPath}...`);
         const sentMsg = await webhook.send(mktMsg);
         const msg: Message = (await webhook.fetchMessage(
           sentMsg.id

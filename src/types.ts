@@ -52,6 +52,8 @@ export interface BestTraitListing {
   attribute: string;
   nextHigherPrice: number;
   priceDiff: number;
+  roi: number;
+  isNew: boolean;
   floorListing: MarketListing;
   nextListing: MarketListing;
 }
