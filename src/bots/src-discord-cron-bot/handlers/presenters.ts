@@ -385,7 +385,9 @@ export const buildTraitTitle = (
   const bestTrait = bestTraitLists[0];
   return `${mentions}New Best ${collection} Trait Snipe ${
     bestTrait.attribute
-  } @ ${bestTrait.floorListing.price?.toFixed(
+  } (Rank ${
+    bestTrait.floorListing.rank
+  }) @ ${bestTrait.floorListing.price?.toFixed(
     2
   )} SOL (Next ${bestTrait.nextListing.price?.toFixed(2)})`;
 };
