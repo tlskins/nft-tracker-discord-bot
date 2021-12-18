@@ -231,7 +231,7 @@ export const buildBestTraitEmbedFields = (
     ...bestTraitListings.map((bestTraitListing) => {
       const { priceDiff, floorListing, attribute, count } = bestTraitListing;
       return {
-        name: `Snipe Trait ${attribute} (${count}) @ ${floorListing.price.toFixed(
+        name: `Snipe Trait ${attribute} (Count ${count}) - Floor @ ${floorListing.price.toFixed(
           2
         )} SOL (+${priceDiff.toFixed(2)})`,
         value: `${floorListing.url}`,
