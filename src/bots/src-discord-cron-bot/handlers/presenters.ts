@@ -378,15 +378,13 @@ export const buildTraitTitle = (
   bestTraitLists: [BestTraitListing],
   mapping: ICollectionMapping
 ): string => {
-  const { traitRole, collection } = mapping;
+  const { traitRole } = mapping;
   let mentions = `<@&${process.env.ALL_TRAIT_ROLE_ID}> `;
   if (traitRole) {
     mentions += `<@&${traitRole}> `;
   }
   const bestTrait = bestTraitLists[0];
-  return `${mentions}New Best ${collection} Trait Snipe - ${
-    bestTrait.attribute
-  } (Rank ${
+  return `${mentions}New Best Trait Snipe - ${bestTrait.attribute} (Rank ${
     bestTrait.floorListing.rank
   }) @ ${bestTrait.floorListing.price?.toFixed(
     2
