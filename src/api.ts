@@ -39,7 +39,7 @@ export const getMarketListings = async (
   const startTime = Moment();
   try {
     const collectionData = (await rest.post(
-      `/${collection}`
+      `collections/${collection}`
     )) as CollectionTrackerResp;
 
     return collectionData.data.tracker;
@@ -105,7 +105,7 @@ export const updateTracker = async (
 ): Promise<CollectionTracker | undefined> => {
   try {
     const collectionData = (await rest.put(
-      `/${collection}`,
+      `collections/${collection}`,
       req
     )) as CollectionTrackerResp;
 
