@@ -383,7 +383,7 @@ export const buildTraitTitle = (
     mentions += `<@&${traitRole}> `;
   }
   const bestTrait = bestTraitLists[0];
-  return `${mentions}New Best ${collection} Trait Snipe ${
+  return `${mentions}New Best ${collection} Trait Snipe - ${
     bestTrait.attribute
   } (Rank ${
     bestTrait.floorListing.rank
