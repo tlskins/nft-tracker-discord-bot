@@ -4,6 +4,7 @@ import {
   MarketSummary,
   ITokenTracker,
   ICollectionMapping,
+  BestTraitListing,
 } from "../../../types";
 
 import { MessageEmbed, EmbedFieldData } from "discord.js";
@@ -223,6 +224,23 @@ export const buildPumpTitle = (
   )}  | ${descrip}`;
 };
 
+export const buildBestTraitEmbedFields = (
+  bestTraitListings: [BestTraitListing]
+): EmbedFieldData[] => {
+  return [
+    ...bestTraitListings.map((bestTraitListing) => {
+      const { priceDiff, floorListing, attribute } = bestTraitListing;
+      return {
+        name: `Best Trait @ ${floorListing.price.toFixed(
+          2
+        )} (${priceDiff.toFixed(2)}) | ${attribute}`,
+        value: `${floorListing.url}`,
+        inline: false,
+      };
+    }),
+  ];
+};
+
 export const buildMarketEmbedFields = (
   marketSummary: MarketSummary
 ): EmbedFieldData[] => {
@@ -366,7 +384,8 @@ export const buildMarketEmbed = (
   tracker: CollectionTracker,
   path: string
 ): MessageEmbed => {
-  const { collection, currentListings, marketSummary } = tracker;
+  const { collection, currentListings, marketSummary, bestTraitListings } =
+    tracker;
   const description = marketSumStr(marketSummary);
 
   const embed = new MessageEmbed()
@@ -376,6 +395,7 @@ export const buildMarketEmbed = (
     .setAuthor("Degen Bible Bot")
     .setDescription(description)
     .addFields(...buildMarketEmbedFields(marketSummary))
+    .addFields(...buildBestTraitEmbedFields(bestTraitListings))
     .setTimestamp();
 
   currentListings.slice(0, 4).forEach((listing) => {

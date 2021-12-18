@@ -261,8 +261,8 @@ class CronBot {
         await webhook.editMessage(pinMsgId, mktMsg);
 
         // temp add new role emojis
-        // const msg: Message = (await webhook.fetchMessage(pinMsgId)) as Message;
-        // msg.react("⏰");
+        const msg: Message = (await webhook.fetchMessage(pinMsgId)) as Message;
+        msg.react("🃏");
       } else {
         console.log(`new pint for ${apiPath}...`);
         const sentMsg = await webhook.send(mktMsg);
@@ -273,6 +273,7 @@ class CronBot {
         msg.react("🧹");
         msg.react("📊");
         msg.react("⏰");
+        msg.react("🃏");
 
         // update pinned msg id
         const updCollMap = await updateCollMap(
@@ -346,6 +347,7 @@ class CronBot {
         msg.react("🧹");
         msg.react("📊");
         msg.react("⏰");
+        msg.react("🃏");
       } else {
         console.log(`markets pin not found sending to channel...`);
         await webhook.send(mktMsg);

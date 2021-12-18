@@ -81,6 +81,8 @@ export const StartListener = async (listener) => {
         msgUser.roles.add(process.env.ALL_SUGG_ROLE_ID)
       } else if ( reaction._emoji.name === "⏰" ) {
         msgUser.roles.add(process.env.ALL_PUMP_ROLE_ID)
+      } else if ( reaction._emoji.name === "🃏" ) {
+        msgUser.roles.add(process.env.ALL_TRAIT_ROLE_ID)
       }
       return
     }
@@ -98,6 +100,8 @@ export const StartListener = async (listener) => {
     } else if ( reaction._emoji.name === "📊" ) {
       msgUser.roles.add(collMap.suggestedRole)
     } else if ( reaction._emoji.name === "⏰" ) {
+      msgUser.roles.add(collMap.pumpRole)
+    } else if ( reaction._emoji.name === "🃏" ) {
       msgUser.roles.add(collMap.pumpRole)
     }
   });
@@ -119,7 +123,10 @@ export const StartListener = async (listener) => {
         msgUser.roles.remove(process.env.ALL_SUGG_ROLE_ID)
       } else if ( reaction._emoji.name === "⏰" ) {
         msgUser.roles.remove(process.env.ALL_PUMP_ROLE_ID)
+      } else if ( reaction._emoji.name === "🃏" ) {
+        msgUser.roles.remove(process.env.ALL_TRAIT_ROLE_ID)
       }
+      
       return
     }
 
@@ -136,6 +143,8 @@ export const StartListener = async (listener) => {
       msgUser.roles.remove(collMap.suggestedRole)
     } else if ( reaction._emoji.name === "⏰" ) {
       msgUser.roles.remove(collMap.pumpRole)
+    } else if ( reaction._emoji.name === "🃏" ) {
+      msgUser.roles.remove(collMap.traitRole)
     }
   });
 
@@ -230,6 +239,24 @@ const createCollRoles = async (server, collMap) => {
     const updCollMap = await updateCollMap(
       collMap.id,
       { id: collMap.id, pumpRole: role.id },
+      errMsg => console.error(`Err updating collection map: ${ errMsg }`)
+    );
+    if (updCollMap) UpdateGlobalCollMap(updCollMap);
+    created = true
+  }
+
+  // create trait role
+  if ( !collMap.traitRole ) {
+    const roleName = `${ collMap.collection } Trait`
+    const role = await server.roles.create({
+      name: roleName,
+      color: 'GREEN',
+    })
+    console.log('New Trait Role: ', role.id)
+
+    const updCollMap = await updateCollMap(
+      collMap.id,
+      { id: collMap.id, traitRole: role.id },
       errMsg => console.error(`Err updating collection map: ${ errMsg }`)
     );
     if (updCollMap) UpdateGlobalCollMap(updCollMap);

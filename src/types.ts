@@ -43,8 +43,17 @@ export interface CollectionTracker {
   lastDayBest: MarketListing;
   lastWeekBest: MarketListing;
   currentListings: [MarketListing];
+  bestTraitListings: [BestTraitListing];
 
   apiColl?: string;
+}
+
+export interface BestTraitListing {
+  attribute: string;
+  nextHigherPrice: number;
+  priceDiff: number;
+  floorListing: MarketListing;
+  nextListing: MarketListing;
 }
 
 export interface UpdateCollectionTracker {
@@ -60,6 +69,7 @@ export interface IUpsertCollectionMapping {
   pinMsgId?: string;
   floorRole?: string;
   suggestedRole?: string;
+  traitRole?: string;
 }
 
 export interface MarketSummary {
@@ -261,6 +271,7 @@ export interface ICollectionMapping {
   floorRole: string;
   suggestedRole: string;
   pumpRole: string;
+  traitRole: string;
   totalSupply: number;
   updateAuthority: string;
 }
