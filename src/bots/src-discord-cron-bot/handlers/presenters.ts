@@ -144,8 +144,9 @@ export const buildBestTitle = (
   if (mapping.suggestedRole) {
     mentions += `<@&${mapping.suggestedRole}> `;
   }
-  return `${mentions}New Best ROI by Rank / Attr - Price @ ${
-    tracker.currentBest.price?.toFixed(2) || "?"
+  const { currentBest } = tracker;
+  return `${mentions}New Best By Rank #${currentBest.rank} ${
+    currentBest.price?.toFixed(2) || "?"
   } SOL`;
 };
 
