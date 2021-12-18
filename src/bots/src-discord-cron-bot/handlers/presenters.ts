@@ -144,7 +144,7 @@ export const buildBestTitle = (
   if (mapping.suggestedRole) {
     mentions += `<@&${mapping.suggestedRole}> `;
   }
-  return `${mentions}New Best @ ${
+  return `${mentions}New Best ROI by Rank / Attr - Price @ ${
     tracker.currentBest.price?.toFixed(2) || "?"
   } SOL`;
 };
@@ -219,7 +219,7 @@ export const buildPumpTitle = (
   if (tracker.currentFloor) {
     floor = `Floor @ ${tracker.currentFloor.price.toFixed(2)}`;
   }
-  return `${mentions}Pump Alert! - Now: ${floor} Pred: ${predictedFloor.toFixed(
+  return `${mentions}Floor Pump Alert! - Now: ${floor} Pred: ${predictedFloor.toFixed(
     2
   )}  | ${descrip}`;
 };
@@ -233,7 +233,7 @@ export const buildBestTraitEmbedFields = (
       return {
         name: `Snipe Trait ${attribute} (Count ${count}) - Floor @ ${floorListing.price.toFixed(
           2
-        )} SOL (+${priceDiff.toFixed(2)})`,
+        )} SOL (Profit +${priceDiff.toFixed(2)})`,
         value: `${floorListing.url}`,
         inline: false,
       };
@@ -377,12 +377,13 @@ export const buildTraitTitle = (
   bestTraitLists: [BestTraitListing],
   mapping: ICollectionMapping
 ): string => {
+  const { traitRole, collection } = mapping;
   let mentions = `<@&${process.env.ALL_TRAIT_ROLE_ID}> `;
-  if (mapping.traitRole) {
-    mentions += `<@&${mapping.traitRole}> `;
+  if (traitRole) {
+    mentions += `<@&${traitRole}> `;
   }
   const bestTrait = bestTraitLists[0];
-  return `${mentions}New Trait Snipe ${
+  return `${mentions}New Best ${collection} Trait Snipe ${
     bestTrait.attribute
   } @ ${bestTrait.floorListing.price?.toFixed(
     2
