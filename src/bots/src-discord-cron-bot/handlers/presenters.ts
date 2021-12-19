@@ -90,46 +90,17 @@ export const getSalesSumTxt = (mktSum: MarketSummary): string => {
   )} | Avg Sale ${getNumChgStr(avgSalePrice, avgSalePriceChange)}`;
 };
 
-export const getShortListing = (listing: MarketListing): string => {
+export const getBestListingTitle = (listing: MarketListing): string => {
   const topAttrs = getTopAttrsTxt(listing);
   const suggPrice = getSuggestedPriceTxt(listing);
   const prefix = getListingPrefix(listing);
   const listPrice = getPrice(listing);
 
-  return `${prefix} @ ${listPrice} ${topAttrs} (SUGG ${suggPrice})`;
-};
-
-export const getShortListingUrl = (listing: MarketListing): string => {
-  return `[${listing.title} Listing](<${listing.url}>)`;
-};
-
-export const getBestListing = (listing: MarketListing): string => {
-  const topAttrs = getTopAttrsTxt(listing);
-  const bestRk = getBestRankTxt(listing);
-  const suggPrice = getSuggestedPriceTxt(listing);
-  const prefix = getListingPrefix(listing);
-  const listPrice = getPrice(listing);
-
-  return `${prefix} @ ${listPrice} ${topAttrs} ${bestRk} ${suggPrice}`;
+  return `${prefix} @ ${listPrice} - ${topAttrs} (SUGG ${suggPrice})`;
 };
 
 export const getListingPrefix = (listing: MarketListing): string => {
-  let listPrefix = `${listing.rarity || ""}`;
-  if (listing.rank) listPrefix += ` | Rank ${listing.rank}`;
-  if (!listPrefix) listPrefix = listing.title;
-
-  return listPrefix;
-};
-
-export const getListingLink = (listing: MarketListing): string => {
-  const topAttrs = getTopAttrsTxt(listing);
-  const bestRk = getBestRankTxt(listing);
-  const suggPrice = getSuggestedPriceTxt(listing);
-  const prefix = getListingPrefix(listing);
-  const listPrice = listing.price.toFixed(2);
-
-  // eslint-disable-next-line prettier/prettier
-    return `[${prefix} @ ${listPrice} SOL ${topAttrs} ${bestRk} ${suggPrice}](<${listing.url}>)`;
+  return listing.rank ? `Rank ${listing.rank}` : listing.title;
 };
 
 export const getBibleLink = (path: string): string => {
@@ -439,8 +410,11 @@ export const buildMarketEmbed = (
     .addFields(...buildBestTraitEmbedFields(bestTraitListings))
     .setTimestamp();
 
-  currentListings.slice(0, 4).forEach((listing) => {
-    embed.addField(getShortListingUrl(listing), getShortListing(listing));
+  currentListings.slice(0, 4).forEach((listing, i) => {
+    embed.addField(
+      `Best by Rank #${i + 1}: ${getBestListingTitle(listing)}`,
+      listing.url
+    );
   });
 
   return embed;
