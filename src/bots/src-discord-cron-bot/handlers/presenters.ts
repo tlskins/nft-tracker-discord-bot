@@ -103,9 +103,9 @@ export const getListingPrefix = (listing: MarketListing): string => {
   return listing.rank ? `Rank ${listing.rank}` : listing.title;
 };
 
-export const getBibleLink = (path: string): string => {
-  return `https://www.degenbible.com/collections/${path}`;
-};
+// export const getBibleLink = (path: string): string => {
+//   return `https://www.degenbible.com/collections/${path}`;
+// };
 
 export const buildBestTitle = (
   tracker: CollectionTracker,
@@ -136,10 +136,10 @@ export const buildBestEmbed = (
       `${getListingPrefix(currentBest)} @ ${getPrice(currentBest)}`
     )
     .addFields(
-      {
-        name: `Analysis`,
-        value: getBibleLink(path),
-      },
+      // {
+      //   name: `Analysis`,
+      //   value: getBibleLink(path),
+      // },
       {
         name: `Best Listing`,
         value: `${currentBest.title}`,
@@ -392,10 +392,7 @@ export const marketSumStr = (mktSum: MarketSummary): string => {
   return `${floorStats}\n${salesStats}\n\n`;
 };
 
-export const buildMarketEmbed = (
-  tracker: CollectionTracker,
-  path: string
-): MessageEmbed => {
+export const buildMarketEmbed = (tracker: CollectionTracker): MessageEmbed => {
   const { collection, currentListings, marketSummary, bestTraitListings } =
     tracker;
   const description = marketSumStr(marketSummary);
@@ -403,7 +400,7 @@ export const buildMarketEmbed = (
   const embed = new MessageEmbed()
     .setColor("#0099ff")
     .setTitle(`${collection} Market Summary`)
-    .setURL(getBibleLink(path))
+    // .setURL(getBibleLink(path))
     .setAuthor("Degen Bible Bot")
     .setDescription(description)
     .addFields(...buildMarketEmbedFields(marketSummary))
@@ -412,7 +409,7 @@ export const buildMarketEmbed = (
 
   currentListings.slice(0, 4).forEach((listing, i) => {
     embed.addField(
-      `Best by Rank #${i + 1}: ${getBestListingTitle(listing)}`,
+      `Best by Rank/Traits #${i + 1}: ${getBestListingTitle(listing)}`,
       listing.url
     );
   });

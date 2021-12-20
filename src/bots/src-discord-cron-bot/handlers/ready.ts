@@ -261,7 +261,7 @@ class CronBot {
 
     // send / update pinned msg
     if (shouldBroadcast(lastBroadcastAt)) {
-      const mktEmbed = buildMarketEmbed(tracker, apiPath);
+      const mktEmbed = buildMarketEmbed(tracker);
       const mktMsg = {
         content: "Market Summary",
         username: "Degen Bible Bot",
