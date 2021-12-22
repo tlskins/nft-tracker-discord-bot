@@ -299,7 +299,6 @@ export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
     .setColor("#ff0000")
     .setTitle(`${collection} Pump Alert`)
     .setAuthor("Degen Bible Bot")
-    .setDescription(`Predicted floor in 1hr: ${diffStr}`)
     .addFields(...buildMarketEmbedFields(marketSummary))
     .setImage(currentFloor.image)
     .setFooter(currentFloor.url)
