@@ -180,12 +180,12 @@ export const buildPumpTitle = (
       mentions += `<@&${mapping.pumpRole}> `;
     }
   }
-  const { saleCounts, predictedFloor } = tracker.marketSummary;
-  let descrip = "0 sold @ 0 mins";
+  const { saleCounts, predictedFloor, predWindowMins } = tracker.marketSummary;
+  let soldDesc = "0 sold @ 0 mins";
   if (saleCounts.length > 0) {
     const count = saleCounts[0].count;
     const mins = Moment().diff(Moment(saleCounts[0].time), "minutes");
-    descrip = `${count} sold @ ${mins} mins`;
+    soldDesc = `${count} sold @ ${mins} mins`;
   }
   let floor = "Floor @ 0";
   if (tracker.currentFloor) {
@@ -193,7 +193,7 @@ export const buildPumpTitle = (
   }
   return `${mentions}Floor Pump Alert! - Now: ${floor} Pred: ${predictedFloor.toFixed(
     2
-  )}  | ${descrip}`;
+  )} in ${predWindowMins} min | ${soldDesc}`;
 };
 
 export const buildBestTraitEmbedFields = (
@@ -218,36 +218,37 @@ export const buildMarketEmbedFields = (
 ): EmbedFieldData[] => {
   const {
     floorCounts,
-    floorCountSlope,
     floorHistory,
-    floorHistorySlope,
     saleCounts,
+    listingCounts,
     saleCountSlope,
     listingCountSlope,
-    listingCounts,
+    floorHistorySlope,
     hourMarketSummary,
     predictedFloor,
+    predWindowMins,
+    numNewListings,
   } = marketSummary;
   const now = Moment();
 
   const diff = predictedFloor - hourMarketSummary.listingFloor;
-  const diffStr = diff < 0 ? `-${diff.toFixed(2)}` : `+${diff.toFixed(2)}`;
+  const diffStr = diff < 0 ? `${diff.toFixed(2)}` : `+${diff.toFixed(2)}`;
 
   return [
     {
-      name: "Predicted Floor 1 Hr",
+      name: `Predicted Floor ${predWindowMins} Mins`,
       value: `${predictedFloor.toFixed(2)} SOL (${diffStr})`,
       inline: false,
     },
     {
-      name: `Floor Counts (Slope ${floorCountSlope.toFixed(2)})`,
+      name: `Floor Counts`,
       value:
         floorCounts.map((cnt) => `${cnt.count}@${cnt.price}`).join(" | ") ||
         "None",
       inline: true,
     },
     {
-      name: `Floor History (Slope ${floorHistorySlope.toFixed(2)})`,
+      name: `Floor History (${floorHistorySlope > 0 ? "📉" : "📈"})`,
       value:
         floorHistory
           .map(
@@ -261,7 +262,7 @@ export const buildMarketEmbedFields = (
       inline: true,
     },
     {
-      name: `Sales Counts (Slope ${saleCountSlope.toFixed(2)})`,
+      name: `Sales Counts (${saleCountSlope > 0 ? "📉" : "📈"})`,
       value:
         saleCounts
           .slice(0, 5)
@@ -272,7 +273,9 @@ export const buildMarketEmbedFields = (
       inline: true,
     },
     {
-      name: `Listing Counts (Slope ${listingCountSlope.toFixed(2)})`,
+      name: `${numNewListings} New Listings Last 15mins (${
+        listingCountSlope > 0 ? "📉" : "📈"
+      })`,
       value:
         listingCounts
           .filter((_, i) => i % 2 === 0)

@@ -96,6 +96,9 @@ export interface MarketSummary {
   floorHistorySlope: number;
 
   predictedFloor: number;
+  predWindowMins: number;
+  numNewListings: number;
+  isPump: boolean;
 }
 
 export interface ISaleCount {
