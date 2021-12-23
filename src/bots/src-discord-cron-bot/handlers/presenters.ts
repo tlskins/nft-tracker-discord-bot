@@ -291,10 +291,6 @@ export const buildMarketEmbedFields = (
 
 export const buildPumpEmbed = (tracker: CollectionTracker): MessageEmbed => {
   const { collection, currentFloor, marketSummary } = tracker;
-  const { predictedFloor } = marketSummary;
-  const diff = predictedFloor - currentFloor.price;
-  const diffStr = diff < 0 ? `${diff.toFixed(2)}` : `+${diff.toFixed(2)}`;
-
   const embed = new MessageEmbed()
     .setColor("#ff0000")
     .setTitle(`${collection} Pump Alert`)
@@ -342,46 +338,6 @@ export const buildFloorEmbed = (tracker: CollectionTracker): MessageEmbed => {
     )
     .setImage(currentFloor.image)
     .setFooter(`Listing: ${currentFloor.url}`)
-    .setTimestamp();
-
-  return embed;
-};
-
-export const buildTraitTitle = (
-  bestTraitLists: [BestTraitListing],
-  mapping: ICollectionMapping
-): string => {
-  const { traitRole } = mapping;
-  let mentions = `<@&${process.env.ALL_TRAIT_ROLE_ID}> `;
-  if (traitRole) {
-    mentions += `<@&${traitRole}> `;
-  }
-  const bestTrait = bestTraitLists[0];
-  return `${mentions}New Best Trait Snipe - ${bestTrait.attribute} (Rank ${
-    bestTrait.floorListing.rank
-  }) @ ${bestTrait.floorListing.price?.toFixed(
-    2
-  )} SOL (Next ${bestTrait.nextListing.price?.toFixed(2)})`;
-};
-
-export const buildTraitEmbed = (
-  bestTraitLists: [BestTraitListing]
-): MessageEmbed => {
-  const bestTrait = bestTraitLists[0];
-
-  const embed = new MessageEmbed()
-    .setColor("#00ff00")
-    .setTitle(`${bestTrait.floorListing.collection} Trait Snipe Listing`)
-    .setURL(bestTrait.floorListing.url)
-    .setAuthor("Degen Bible Bot")
-    .setDescription(
-      `${getListingPrefix(bestTrait.floorListing)} @ ${getPrice(
-        bestTrait.floorListing
-      )}`
-    )
-    .addFields(...buildBestTraitEmbedFields(bestTraitLists))
-    .setImage(bestTrait.floorListing.image)
-    .setFooter(`Listing: ${bestTrait.floorListing.url}`)
     .setTimestamp();
 
   return embed;

@@ -72,7 +72,6 @@ export interface IUpsertCollectionMapping {
   pinMsgId?: string;
   floorRole?: string;
   suggestedRole?: string;
-  traitRole?: string;
 }
 
 export interface MarketSummary {
@@ -277,7 +276,6 @@ export interface ICollectionMapping {
   floorRole: string;
   suggestedRole: string;
   pumpRole: string;
-  traitRole: string;
   totalSupply: number;
   updateAuthority: string;
 }
