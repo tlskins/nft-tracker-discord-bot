@@ -97,6 +97,7 @@ export interface MarketSummary {
   predictedFloor: number;
   predWindowMins: number;
   numNewListings: number;
+  recentFloorChange: number;
   isPump: boolean;
 }
 

@@ -180,18 +180,26 @@ export const buildPumpTitle = (
       mentions += `<@&${mapping.pumpRole}> `;
     }
   }
-  const { saleCounts, predictedFloor, predWindowMins } = tracker.marketSummary;
+  const { saleCounts, predictedFloor, predWindowMins, recentFloorChange } =
+    tracker.marketSummary;
   let soldDesc = "0 sold @ 0 mins";
   if (saleCounts.length > 0) {
     const count = saleCounts[0].count;
     const mins = Moment().diff(Moment(saleCounts[0].time), "minutes");
     soldDesc = `${count} sold @ ${mins} mins`;
   }
+
+  const currFloor = tracker.currentFloor.price;
   let floor = "Floor @ 0";
   if (tracker.currentFloor) {
-    floor = `Floor @ ${tracker.currentFloor.price.toFixed(2)}`;
+    floor = `Floor @ ${currFloor.toFixed(2)}`;
   }
-  return `${mentions}Floor Pump Alert! - Now: ${floor} Pred: ${predictedFloor.toFixed(
+
+  let wasFloor = "";
+  if (recentFloorChange > 0.0) {
+    wasFloor = ` Was: ${(currFloor + recentFloorChange).toFixed(2)} @ -5min `;
+  }
+  return `${mentions}Floor Pump Alert! - Now: ${floor} ${wasFloor} Pred: ${predictedFloor.toFixed(
     2
   )} in ${predWindowMins} min | ${soldDesc}`;
 };
@@ -233,6 +241,8 @@ export const buildMarketEmbedFields = (
 
   const diff = predictedFloor - hourMarketSummary.listingFloor;
   const diffStr = diff < 0 ? `${diff.toFixed(2)}` : `+${diff.toFixed(2)}`;
+  const netNewLists =
+    numNewListings > 0.0 ? `+${numNewListings}` : numNewListings;
 
   return [
     {
@@ -273,7 +283,7 @@ export const buildMarketEmbedFields = (
       inline: true,
     },
     {
-      name: `${numNewListings} New Listings Last 15mins (${
+      name: `${netNewLists} Net Listings last 15mins (${
         listingCountSlope > 0 ? "📉" : "📈"
       })`,
       value:
