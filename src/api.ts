@@ -8,6 +8,7 @@ import {
   ICollectionMapping,
   ICollectionMappingResp,
   IUpsertCollectionMapping,
+  IDiscordUpdateUser,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 import axios, { AxiosError } from "axios";
@@ -85,6 +86,28 @@ export const syncSubscriptions = async (
       console.error(e);
     }
   }
+};
+
+export const updateUser = async (
+  update: IDiscordUpdateUser,
+  handleErr: (msg: string) => Promise<void>
+): Promise<boolean> => {
+  console.log("Updating user...");
+  try {
+    await rest.put("/users/admin-update", update);
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `Error updating user: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+    return false;
+  }
+
+  return true;
 };
 
 export const getTokenAlerts = async (

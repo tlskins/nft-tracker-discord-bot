@@ -243,6 +243,15 @@ export interface IUser {
   hasWalletTracker: boolean;
 }
 
+export interface IUpdateUser {
+  walletPublicKey: string;
+}
+
+export interface IDiscordUpdateUser {
+  discordId: string;
+  update: IUpdateUser;
+}
+
 export interface GetTokenAlertsResp {
   data: GetTokenAlertsData;
 }

@@ -2,7 +2,7 @@ import "dotenv/config";
 import rest from "./bots/src-discord-cron-bot/rest";
 const { Client, Intents } = require("discord.js");
 
-import { updateCollMap } from "./api";
+import { updateCollMap, updateUser } from "./api";
 import { checkBalChange } from "./solana";
 import { FindGlobalCollMapByPin, GetGlobalCollMap, UpdateGlobalCollMap } from "./collMappings"
 
@@ -44,6 +44,32 @@ export const StartListener = async (listener) => {
         content: `Verification Code: ${verifyCode}`,
         ephemeral: true,
       });
+      return false
+    }
+
+    // set wallet address
+    if (message.content.startsWith("/wallet ")) {
+      const splitMsg = message.content.split(" ")
+      if ( splitMsg.length !== 2 || splitMsg[1].length !== 44 ) {
+        await message.reply({
+          content: "Invalid command",
+          ephemeral: true,
+        });
+        return false
+      }
+
+      const walletPublicKey = splitMsg[1]
+      const discordId = message.author.id
+      const updSuccess = await updateUser(
+        { discordId, update: { walletPublicKey }},
+        async (content) => {
+          await message.reply({ content, ephemeral: true });
+        }
+      )
+      if ( updSuccess ) {
+        await message.reply({ content: "Wallet successfully updated", ephemeral: true })
+      }
+
       return false
     }
 
