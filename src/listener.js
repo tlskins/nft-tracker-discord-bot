@@ -1,9 +1,10 @@
 import "dotenv/config";
 import rest from "./bots/src-discord-cron-bot/rest";
+import Moment from "moment";
 const { Client, Intents } = require("discord.js");
 
-import { updateCollMap, updateUser } from "./api";
-import { checkBalChange } from "./solana";
+import { updateCollMap, updateUser, getUserByDiscord } from "./api";
+import { checkBalChange, getSolTransaction } from "./solana";
 import { FindGlobalCollMapByPin, GetGlobalCollMap, UpdateGlobalCollMap } from "./collMappings"
 
 export const BuildListener = () => {
@@ -21,6 +22,10 @@ export const BuildListener = () => {
     partials: ["MESSAGE", "CHANNEL", "REACTION", "USER", "GUILD_MEMBER"],
   });
 };
+
+const discordHandleErr = async (content) => {
+  await message.reply({ content, ephemeral: true });
+}
 
 export const StartListener = async (listener) => {
   listener.on("ready", () => {
@@ -47,8 +52,26 @@ export const StartListener = async (listener) => {
       return false
     }
 
+    // get enroll price
+    if (message.content == "/enroll-price") {
+      const enrollPrice = process.env.ENROLL_PRICE_SOL
+      await message.reply({ content: `Current enrollment price: ${ enrollPrice } sol`, ephemeral: true })
+      return false
+    }
+
+    // get wallet address
+    if (message.content == "/get-wallet") {
+      const discordId = message.author.id
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( user ) {
+        await message.reply({ content: `Wallet: ${user.walletPublicKey}`, ephemeral: true })
+      }
+
+      return false
+    }
+
     // set wallet address
-    if (message.content.startsWith("/wallet ")) {
+    if (message.content.startsWith("/set-wallet ")) {
       const splitMsg = message.content.split(" ")
       if ( splitMsg.length !== 2 || splitMsg[1].length !== 44 ) {
         await message.reply({
@@ -57,6 +80,8 @@ export const StartListener = async (listener) => {
         });
         return false
       }
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( !user ) return false
 
       const walletPublicKey = splitMsg[1]
       const discordId = message.author.id
@@ -73,24 +98,77 @@ export const StartListener = async (listener) => {
       return false
     }
 
-    // enroll
-    if (message.content.startsWith("/enroll ")) {
+    // enroll transaction
+    if (message.content.startsWith("/enroll-transaction ")) {
       const splitMsg = message.content.split(" ")
-      if ( splitMsg.length !== 2 || splitMsg[1].length !== 88 ) {
+      if ( splitMsg.length !== 2 || splitMsg[1].length < 80  ) {
         await message.reply({
           content: "Invalid command",
           ephemeral: true,
         });
         return false
       }
+      const discordId = message.author.id
+      // validate user and wallet exists
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( !user ) return false
+      if ( !user.walletPublicKey ) {
+        await message.reply({ content: "Your wallet is not set up yet please use /set-wallet first", ephemeral: true })
+        return false
+      }
+
       const trxAddr = splitMsg[1]
       const treasuryAddr = process.env.TREASURY_ADDRESS
       try {
-        const treasuryBalChg = await checkBalChange(trxAddr, treasuryAddr)
-        await message.reply({
-          content: `Transaction payment ${treasuryBalChg} confirmed`,
-          ephemeral: true,
-        });
+        // validate recent trx
+        const trx = await getSolTransaction(trxAddr)
+        if ( Moment.unix(trx.blockTime).isBefore(Moment().add(-12, "hours") )) {
+          await message.reply({
+            content: `Invalid transaction. Transaction was sent over 12 hours ago`,
+            ephemeral: true,
+          });
+          return false 
+        }
+
+        // validate matches user wallet
+        const userBalChg = await checkBalChange(trx, user.walletPublicKey)
+        if ( userBalChg >= 0 ) {
+          await message.reply({
+            content: `Transaction does not match wallet address`,
+            ephemeral: true,
+          });
+          return false 
+        }
+
+        // validate payment amount
+        const treasuryBalChg = await checkBalChange(trx, treasuryAddr)
+        const enrollPrice = process.env.ENROLL_PRICE_SOL
+        if ( treasuryBalChg < enrollPrice ) {
+          await message.reply({
+            content: `Transaction amount ${ treasuryBalChg } is less than fee of ${ enrollPrice }`,
+            ephemeral: true,
+          });
+          return false 
+        }
+
+        // enrollment successful
+        const updateSucc = await updateUser(
+          { discordId, update: {
+            isEnrolled: true,
+            transactionId: trxAddr,
+            transactionAmount: treasuryBalChg,
+          }},
+          discordHandleErr,
+        )
+        if ( updateSucc ) {
+          const server = listener.guilds.cache.get(process.env.SERVER_ID);
+          const msgUser = server.members.cache.get(discordId);
+          await msgUser.roles.add(process.env.MEMBER_ROLE_ID)
+          await message.reply({
+            content: `Enrollment confirmed!`,
+            ephemeral: true,
+          });
+        }
       } catch(e) {
         await message.reply({
           content: `Error: ${e}`,

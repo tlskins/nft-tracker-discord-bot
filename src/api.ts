@@ -9,6 +9,8 @@ import {
   ICollectionMappingResp,
   IUpsertCollectionMapping,
   IDiscordUpdateUser,
+  IUser,
+  IUserResp,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 import axios, { AxiosError } from "axios";
@@ -108,6 +110,30 @@ export const updateUser = async (
   }
 
   return true;
+};
+
+export const getUserByDiscord = async (
+  discordId: string,
+  handleErr: (msg: string) => Promise<void>
+): Promise<IUser | undefined> => {
+  console.log(`Getting user by discord ${discordId}...`);
+  try {
+    const resp: IUserResp = await rest.get(
+      `/users/find-by-discord/${discordId}`
+    );
+
+    return resp.data.user;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `Error finding user: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+    return undefined;
+  }
 };
 
 export const getTokenAlerts = async (

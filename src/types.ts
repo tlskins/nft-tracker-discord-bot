@@ -231,6 +231,14 @@ export interface IToken {
   topAttributes: [TokenAttributes];
 }
 
+export interface IUserResp {
+  data: IUserData;
+}
+
+export interface IUserData {
+  user: IUser;
+}
+
 export interface IUser {
   id: string;
   discordId: string;
@@ -241,10 +249,14 @@ export interface IUser {
   trialEnd: string;
   trackedWallets: [string];
   hasWalletTracker: boolean;
+  walletPublicKey: string;
 }
 
 export interface IUpdateUser {
-  walletPublicKey: string;
+  walletPublicKey?: string;
+  isEnrolled?: boolean;
+  transactionId?: string;
+  transactionAmount?: number;
 }
 
 export interface IDiscordUpdateUser {
