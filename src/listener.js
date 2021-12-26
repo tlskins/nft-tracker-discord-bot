@@ -3,6 +3,7 @@ import rest from "./bots/src-discord-cron-bot/rest";
 const { Client, Intents } = require("discord.js");
 
 import { updateCollMap } from "./api";
+import { checkBalChange } from "./solana";
 import { FindGlobalCollMapByPin, GetGlobalCollMap, UpdateGlobalCollMap } from "./collMappings"
 
 export const BuildListener = () => {
@@ -26,10 +27,12 @@ export const StartListener = async (listener) => {
     console.log(`Logged in as ${listener.user.tag}!`);
   });
 
-  // dms for /verify
+  // handle bot comman ds
   listener.on("messageCreate", async (message) => {
     if (message.author.bot) return false;
+    if (message.channel.type !== "DM") return false;
 
+    // verify
     if (message.content === "/verify") {
       const verifyCode = generateCode();
       await startVerification({
@@ -41,6 +44,33 @@ export const StartListener = async (listener) => {
         content: `Verification Code: ${verifyCode}`,
         ephemeral: true,
       });
+      return false
+    }
+
+    // enroll
+    if (message.content.startsWith("/enroll ")) {
+      const splitMsg = message.content.split(" ")
+      if ( splitMsg.length !== 2 || splitMsg[1].length !== 88 ) {
+        await message.reply({
+          content: "Invalid command",
+          ephemeral: true,
+        });
+        return false
+      }
+      const trxAddr = splitMsg[1]
+      const treasuryAddr = process.env.TREASURY_ADDRESS
+      try {
+        const treasuryBalChg = await checkBalChange(trxAddr, treasuryAddr)
+        await message.reply({
+          content: `Transaction payment ${treasuryBalChg} confirmed`,
+          ephemeral: true,
+        });
+      } catch(e) {
+        await message.reply({
+          content: `Error: ${e}`,
+          ephemeral: true,
+        });
+      }
     }
   });
 

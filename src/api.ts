@@ -10,8 +10,11 @@ import {
   IUpsertCollectionMapping,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
+import axios, { AxiosError } from "axios";
 
 import Moment from "moment";
+
+type ServerError = { message: string };
 
 export const getCollectionMappings = async (
   handleErr: (msg: string) => Promise<void>
@@ -25,10 +28,15 @@ export const getCollectionMappings = async (
     }, new Map() as Map<string, ICollectionMapping>);
 
     return out;
-  } catch (err) {
-    const errMsg = `error getting collection mappings: ${err.response?.data?.message}`;
-    console.error(errMsg);
-    handleErr(errMsg);
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverrError = e as AxiosError<ServerError>;
+      const errMsg = `error getting collection mappings: ${serverrError.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
   }
 };
 
@@ -43,16 +51,21 @@ export const getMarketListings = async (
     )) as CollectionTrackerResp;
 
     return collectionData.data.tracker;
-  } catch (err) {
-    if (Moment().diff(startTime, "seconds") >= 5.9) {
+  } catch (e) {
+    if (Moment().diff(startTime, "seconds") >= 6.9) {
       console.error(
         `Request for ${collection} timedout - supressing error broadcast`
       );
       return;
     }
-    const errMsg = `error getting ${collection} market listings: ${err.response?.data?.message}`;
-    console.error(errMsg);
-    handleErr(errMsg);
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error getting ${collection} market listings: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
   }
 };
 
@@ -62,10 +75,15 @@ export const syncSubscriptions = async (
   console.log("syncing subscriptions...");
   try {
     await rest.post("/subscriptions/sync");
-  } catch (err) {
-    const errMsg = `error syncing subs: ${err.response?.data?.message}`;
-    console.error(errMsg);
-    handleErr(errMsg);
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error syncing subs: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
   }
 };
 
@@ -77,10 +95,15 @@ export const getTokenAlerts = async (
     const resp: GetTokenAlertsResp = await rest.get("/alert-token-trackers");
 
     return resp.data?.trackers;
-  } catch (err) {
-    const errMsg = `error getting token alerts: ${err.response?.data?.message}`;
-    console.error(errMsg);
-    handleErr(errMsg);
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error getting token alerts: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
   }
 };
 
@@ -91,10 +114,15 @@ export const resetTokenAlerts = async (
   console.log("resetting token alerts...", ids);
   try {
     await rest.delete("/alert-token-trackers", { data: { ids } });
-  } catch (err) {
-    const errMsg = `error resetting token alerts: ${err.response?.data?.message}`;
-    console.error(errMsg);
-    handleErr(errMsg);
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error resetting token alerts: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
   }
 };
 
@@ -110,10 +138,15 @@ export const updateTracker = async (
     )) as CollectionTrackerResp;
 
     return collectionData.data.tracker;
-  } catch (err) {
-    const errMsg = `error updating ${collection} tracker: ${err.response?.data?.message}`;
-    console.error(errMsg);
-    handleErr(errMsg);
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error updating ${collection} tracker: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
   }
 };
 
@@ -129,9 +162,14 @@ export const updateCollMap = async (
     )) as ICollectionMappingResp;
 
     return collectionData.data.mapping;
-  } catch (err) {
-    const errMsg = `error updating ${collId} mapping: ${err.response?.data?.message}`;
-    console.error(errMsg);
-    handleErr(errMsg);
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error updating ${collId} mapping: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
   }
 };
