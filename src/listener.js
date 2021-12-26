@@ -116,6 +116,10 @@ export const StartListener = async (listener) => {
         await message.reply({ content: "Your wallet is not set up yet please use /set-wallet first", ephemeral: true })
         return false
       }
+      if ( !user.isEnrolled ) {
+        await message.reply({ content: "User already enrolled", ephemeral: true })
+        return false
+      }
 
       const trxAddr = splitMsg[1]
       const treasuryAddr = process.env.TREASURY_ADDRESS

@@ -245,6 +245,7 @@ export interface IUser {
   discordName: string;
   verified: boolean;
   isOG: boolean;
+  isEnrolled: boolean;
   inactiveDate?: string;
   trialEnd: string;
   trackedWallets: [string];
