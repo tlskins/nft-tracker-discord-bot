@@ -197,7 +197,7 @@ export const buildPumpTitle = (
 
   let wasFloor = "";
   if (recentFloorChange > 0.0) {
-    wasFloor = ` Was: ${(currFloor + recentFloorChange).toFixed(2)} @ -5min `;
+    wasFloor = ` Was: ${(currFloor - recentFloorChange).toFixed(2)} @ -5min `;
   }
   return `${mentions}Floor Pump Alert! - Now: ${floor} ${wasFloor} Pred: ${predictedFloor.toFixed(
     2
