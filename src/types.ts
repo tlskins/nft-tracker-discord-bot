@@ -246,6 +246,7 @@ export interface IUser {
   verified: boolean;
   isOG: boolean;
   isEnrolled: boolean;
+  enrolledAt?: string;
   inactiveDate?: string;
   trialEnd: string;
   trackedWallets: [string];
@@ -253,11 +254,25 @@ export interface IUser {
   walletPublicKey: string;
 }
 
+export interface ICreateUser {
+  discordId: string;
+  discordName: string;
+  referrerDiscordId: string;
+  inviteId: string;
+  lastJoined: string;
+}
+
 export interface IUpdateUser {
   walletPublicKey?: string;
+
   isEnrolled?: boolean;
   transactionId?: string;
   transactionAmount?: number;
+  enrolledAt?: string;
+
+  referrerDiscordId?: string;
+  inviteId?: string;
+  lastJoined?: string;
 }
 
 export interface IDiscordUpdateUser {

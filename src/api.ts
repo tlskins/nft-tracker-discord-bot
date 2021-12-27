@@ -11,6 +11,8 @@ import {
   IDiscordUpdateUser,
   IUser,
   IUserResp,
+  ICreateUser,
+  IUserData,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 import axios, { AxiosError } from "axios";
@@ -110,6 +112,28 @@ export const updateUser = async (
   }
 
   return true;
+};
+
+export const createUser = async (
+  data: ICreateUser,
+  handleErr: (msg: string) => Promise<void>
+): Promise<IUser | undefined> => {
+  console.log("Creating user...");
+  try {
+    const userResp = (await rest.post("/users", data)) as IUserResp;
+
+    return userResp.data.user;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `Error creating user: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+    return;
+  }
 };
 
 export const getUserByDiscord = async (

@@ -3,7 +3,7 @@ import rest from "./bots/src-discord-cron-bot/rest";
 import Moment from "moment";
 const { Client, Intents } = require("discord.js");
 
-import { updateCollMap, updateUser, getUserByDiscord } from "./api";
+import { updateCollMap, updateUser, getUserByDiscord, createUser } from "./api";
 import { checkBalChange, getSolTransaction } from "./solana";
 import { FindGlobalCollMapByPin, GetGlobalCollMap, UpdateGlobalCollMap } from "./collMappings"
 
@@ -18,6 +18,7 @@ export const BuildListener = () => {
       Intents.FLAGS.GUILD_MESSAGES,
       Intents.FLAGS.GUILD_PRESENCES,
       Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+      Intents.FLAGS.GUILD_INVITES,
     ],
     partials: ["MESSAGE", "CHANNEL", "REACTION", "USER", "GUILD_MEMBER"],
   });
@@ -27,30 +28,72 @@ const discordHandleErr = async (content) => {
   await message.reply({ content, ephemeral: true });
 }
 
+let guildInvites = new Map()
+
 export const StartListener = async (listener) => {
-  listener.on("ready", () => {
+  listener.on("ready", async () => {
     console.log(`Logged in as ${listener.user.tag}!`);
+
+    // track invites
+    const guild = listener.guilds.cache.get(process.env.SERVER_ID);
+    const invites = await guild.invites.fetch()
+    invites.each(inv => guildInvites.set(inv.code, inv.uses));
+    console.log("Current invites: ", guildInvites)
   });
 
-  // handle bot comman ds
+  // update invite cache when new ones created
+  listener.on('inviteCreate', async invite => {
+    console.log("Syncing invite: ", invite)
+    const invites = await invite.guild.invites.fetch();
+    invites.each(inv => guildInvites.set(inv.code, inv.uses));
+    console.log("Updated invites: ", guildInvites)
+  })
+
+  // role synchronization with db
+  listener.on("guildMemberUpdate", async (oldMember, newMember) => {
+    listener.users.cache.get(newMember.id)
+
+    const discordId = newMember.user.id
+    const isOG = newMember._roles.includes( process.env.OG_ROLE_ID )
+    const wasOG = oldMember._roles.includes( process.env.OG_ROLE_ID )
+    console.log("is OG", discordId, isOG, wasOG)
+    if ( isOG !== wasOG ) {
+      console.log('updating og role ', isOG, discordId)
+      await updateUser({ discordId, update: { isOG }})
+    }
+  });
+
+  // new member
+  listener.on("guildMemberAdd", async (newMember) => {
+    console.log("newMember", newMember);
+    const guild = listener.guilds.cache.get(process.env.SERVER_ID);
+    const newInvites = await guild.invites.fetch()
+    const usedInvite = newInvites.find(inv => guildInvites.get(inv.code) < inv.uses);
+    console.log(`The code ${usedInvite.code} was just used by ${newMember.user.username}.`)
+    newInvites.each(inv => guildInvites.set(inv.code, inv.uses));
+
+    const newUser = await createUser(
+      {
+        discordId: newMember.user.id,
+        discordName: `${newMember.user.username}#${newMember.user.discriminator}`,
+        referrerDiscordId: usedInvite.inviter.id,
+        inviteId: usedInvite.code, 
+        lastJoined: Moment(),
+      },
+      msg => console.log(msg),
+    )
+    if ( newUser ) {
+      console.log(`Created / Updated user for discordId ${ newUser.discordId }`)
+      if ( newUser.inactiveDate && Moment(newUser.inactiveDate).isBefore(Moment())) {
+        newUser.roles.add(process.env.TRAIL_ROLE_ID)
+      }
+    }
+  });
+
+  // handle bot commands
   listener.on("messageCreate", async (message) => {
     if (message.author.bot) return false;
     if (message.channel.type !== "DM") return false;
-
-    // verify
-    if (message.content === "/verify") {
-      const verifyCode = generateCode();
-      await startVerification({
-        discordId: message.author.id,
-        discordName: `${message.author.username}#${message.author.discriminator}`,
-        verifyCode,
-      });
-      await message.reply({
-        content: `Verification Code: ${verifyCode}`,
-        ephemeral: true,
-      });
-      return false
-    }
 
     // get enroll price
     if (message.content == "/enroll-price") {
@@ -159,6 +202,7 @@ export const StartListener = async (listener) => {
         const updateSucc = await updateUser(
           { discordId, update: {
             isEnrolled: true,
+            enrolledAt: Moment(),
             transactionId: trxAddr,
             transactionAmount: treasuryBalChg,
           }},
@@ -180,26 +224,6 @@ export const StartListener = async (listener) => {
         });
       }
     }
-  });
-
-  // role synchronization with db
-  listener.on("guildMemberUpdate", async (oldMember, newMember) => {
-    listener.users.cache.get(newMember.id)
-
-    const discordId = newMember.user.id
-    const isOG = newMember._roles.includes( process.env.OG_ROLE_ID )
-    const wasOG = oldMember._roles.includes( process.env.OG_ROLE_ID )
-    console.log("is OG", discordId, isOG, wasOG)
-    if ( isOG !== wasOG ) {
-      console.log('updating og role ', isOG, discordId)
-      await updateRole({ discordId, isOG })
-    }
-  });
-
-  // new member
-  listener.on("guildMemberAdd", async (newMember) => {
-    console.log("newMember", newMember);
-    await syncAllMembershipRoles()
   });
 
   // subscribe coll role
@@ -281,43 +305,7 @@ export const StartListener = async (listener) => {
   listener.login(process.env.DISCORD_BOT_TOKEN);
 };
 
-// controllers
-
-const startVerification = async (req) => {
-  console.log("startVerification...");
-  try {
-    await rest.put("/users/verify", req);
-  } catch( err ) {
-    console.error("error getting verification: ", err.response?.data)
-  }
-};
-
-const updateRole = async ({ discordId, isOG }) => {
-  console.log("sync og role...");
-  try {
-    await rest.put("/subscriptions/sync", { discordId, isOG });
-  } catch( err ) {
-    console.error("error syncing og role: ", err.response?.data)
-  }
-};
-
-const syncAllMembershipRoles = async () => {
-  console.log("sync membership roles...");
-  try {
-    await rest.post("/subscriptions/sync");
-  } catch( err ) {
-    console.error("error sync membership roles: ", err.response?.data)
-  }
-};
-
 // helpers
-
-const generateCode = () => {
-  const min = 100000;
-  const max = 999999;
-  //The maximum is exclusive and the minimum is inclusive
-  return Math.floor(Math.random() * (max - min) + min);
-};
 
 const createCollRoles = async (server, collMap) => {
   let created = false
