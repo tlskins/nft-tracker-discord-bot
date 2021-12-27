@@ -252,6 +252,10 @@ export interface IUser {
   trackedWallets: [string];
   hasWalletTracker: boolean;
   walletPublicKey: string;
+
+  referrerDiscordId: string;
+  inviteId: string;
+  bounty: number;
 }
 
 export interface ICreateUser {
@@ -273,11 +277,31 @@ export interface IUpdateUser {
   referrerDiscordId?: string;
   inviteId?: string;
   lastJoined?: string;
+  bounty?: number;
 }
 
 export interface IDiscordUpdateUser {
   discordId: string;
   update: IUpdateUser;
+}
+
+export interface IReferralsResp {
+  data: IReferralsData;
+}
+
+export interface IReferralsData {
+  referrals: IReferrals;
+}
+
+export interface IReferrals {
+  currentEnd: string;
+  currentStart: string;
+  prevStart: string;
+
+  currentReferrals: IUser[];
+  currentEnrollees: IUser[];
+  prevReferrals: IUser[];
+  prevEnrollees: IUser[];
 }
 
 export interface GetTokenAlertsResp {

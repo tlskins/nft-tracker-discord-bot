@@ -82,7 +82,11 @@ class CronBot {
 
   sendErrMsg = (castKey: string) => async (message: string) => {
     const lastErrCast = this.broadcasts.get(castKey);
-    console.error(`sending err "${message}" - lastAt ${lastErrCast?.format()}`);
+    console.error(
+      `sending err "${message}" - Last Cast: ${
+        lastErrCast?.format() || "never"
+      }`
+    );
     if (shouldBroadcastErr(lastErrCast)) {
       this.postTrackerErr(message);
       this.broadcasts.set(castKey, Moment());
@@ -247,7 +251,7 @@ class CronBot {
         msg.react("🧹");
         msg.react("📊");
         msg.react("⏰");
-        msg.react("🃏");
+        // msg.react("🃏");
 
         // update pinned msg id
         const updCollMap = await updateCollMap(
@@ -256,6 +260,14 @@ class CronBot {
           this.sendErrMsg(apiPath + "-update-err")
         );
         if (updCollMap) UpdateGlobalCollMap(updCollMap);
+
+        // broadcast to new collections channel
+        const newCollChann = process.env.CHANNEL_NEW_COLLS as string;
+        const newCollWebhook = await this._getWebhook(newCollChann);
+        await newCollWebhook.send({
+          content: `* ${updCollMap?.collection} - Added *`,
+          username: "Degen Bible Bot",
+        });
       }
 
       // update last broadcast at
@@ -321,7 +333,7 @@ class CronBot {
         msg.react("🧹");
         msg.react("📊");
         msg.react("⏰");
-        msg.react("🃏");
+        // msg.react("🃏");
       } else {
         console.log(`markets pin not found sending to channel...`);
         await webhook.send(mktMsg);

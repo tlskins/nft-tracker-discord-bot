@@ -3,6 +3,7 @@ import {
   CollectionTracker,
   GetTokenAlertsResp,
   UpdateCollectionTracker,
+  ICreateUser,
   ITokenTracker,
   ILandingResp,
   ICollectionMapping,
@@ -11,8 +12,8 @@ import {
   IDiscordUpdateUser,
   IUser,
   IUserResp,
-  ICreateUser,
-  IUserData,
+  IReferralsResp,
+  IReferrals,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 import axios, { AxiosError } from "axios";
@@ -27,10 +28,13 @@ export const getCollectionMappings = async (
   console.log("getting collection mappings...");
   try {
     const resp: ILandingResp = await rest.get("/landing");
+    let lastColl: ICollectionMapping | undefined;
     const out = (resp.data?.collections || []).reduce((maps, collMap) => {
       maps.set(collMap.id, collMap);
+      if (!lastColl) lastColl = collMap;
       return maps;
     }, new Map() as Map<string, ICollectionMapping>);
+    console.log(`Last collection: ${lastColl?.collection}`);
 
     return out;
   } catch (e) {
@@ -115,18 +119,42 @@ export const updateUser = async (
 };
 
 export const createUser = async (
-  data: ICreateUser,
+  create: ICreateUser,
   handleErr: (msg: string) => Promise<void>
 ): Promise<IUser | undefined> => {
   console.log("Creating user...");
   try {
-    const userResp = (await rest.post("/users", data)) as IUserResp;
+    const resp = (await rest.post("/users", create)) as IUserResp;
 
-    return userResp.data.user;
+    return resp.data.user;
   } catch (e) {
     if (axios.isAxiosError(e)) {
       const serverErr = e as AxiosError<ServerError>;
-      const errMsg = `Error creating user: ${serverErr.response?.data?.message}`;
+      const errMsg = `Error updating user: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+    return;
+  }
+};
+
+export const getReferrals = async (
+  discordId: string,
+  handleErr: (msg: string) => Promise<void>
+): Promise<IReferrals | undefined> => {
+  console.log("Getting referrals...");
+  try {
+    const resp = (await rest.get(
+      `/users/referrals/${discordId}`
+    )) as IReferralsResp;
+
+    return resp.data.referrals;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `Error getting referrals: ${serverErr.response?.data?.message}`;
       console.error(errMsg);
       handleErr(errMsg);
     } else {

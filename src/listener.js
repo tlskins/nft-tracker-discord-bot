@@ -1,11 +1,20 @@
 import "dotenv/config";
-import rest from "./bots/src-discord-cron-bot/rest";
 import Moment from "moment";
-const { Client, Intents } = require("discord.js");
+const { Client, Intents, TextChannel } = require("discord.js");
 
-import { updateCollMap, updateUser, getUserByDiscord, createUser } from "./api";
+import {
+  updateCollMap,
+  updateUser,
+  getReferrals,
+  getUserByDiscord,
+  createUser,
+} from "./api";
 import { checkBalChange, getSolTransaction } from "./solana";
-import { FindGlobalCollMapByPin, GetGlobalCollMap, UpdateGlobalCollMap } from "./collMappings"
+import {
+  FindGlobalCollMapByPin,
+  GetGlobalCollMap,
+  UpdateGlobalCollMap,
+} from "./collMappings"
 
 export const BuildListener = () => {
   return new Client({
@@ -38,7 +47,7 @@ export const StartListener = async (listener) => {
     const guild = listener.guilds.cache.get(process.env.SERVER_ID);
     const invites = await guild.invites.fetch()
     invites.each(inv => guildInvites.set(inv.code, inv.uses));
-    console.log("Current invites: ", guildInvites)
+    console.log("Invites tracker updated...")
   });
 
   // update invite cache when new ones created
@@ -46,7 +55,7 @@ export const StartListener = async (listener) => {
     console.log("Syncing invite: ", invite)
     const invites = await invite.guild.invites.fetch();
     invites.each(inv => guildInvites.set(inv.code, inv.uses));
-    console.log("Updated invites: ", guildInvites)
+    console.log("Invites tracker updated...")
   })
 
   // role synchronization with db
@@ -65,7 +74,6 @@ export const StartListener = async (listener) => {
 
   // new member
   listener.on("guildMemberAdd", async (newMember) => {
-    console.log("newMember", newMember);
     const guild = listener.guilds.cache.get(process.env.SERVER_ID);
     const newInvites = await guild.invites.fetch()
     const usedInvite = newInvites.find(inv => guildInvites.get(inv.code) < inv.uses);
@@ -88,6 +96,17 @@ export const StartListener = async (listener) => {
         newUser.roles.add(process.env.TRAIL_ROLE_ID)
       }
     }
+
+    // broadcast
+    const chann = listener.channels.cache.get(process.env.CHANNEL_MEMBERSHIP)
+    chann.send({ content: `${ newMember.user.username }#${newMember.user.discriminator} just joined!` });
+  });
+
+  // member left
+  listener.on("guildMemberRemove", async (member) => {
+    // broadcast
+    const chann = listener.channels.cache.get(process.env.CHANNEL_MEMBERSHIP)
+    chann.send({ content: `${ member.user.username }#${member.user.discriminator} just left!`});
   });
 
   // handle bot commands
@@ -95,10 +114,38 @@ export const StartListener = async (listener) => {
     if (message.author.bot) return false;
     if (message.channel.type !== "DM") return false;
 
+    // list commands
+    if (message.content == "/commands") {
+      let commands = "/enroll-price - Current price of enrollment\n"
+      commands += "/status - Current membership status\n"
+      commands += "/get-referrer - User's referrer\n"
+      commands += "/get-referrals - View status of current and recent referrals and bounties\n"
+      commands += "/get-wallet - Users's associated wallet\n"
+      commands += "/set-wallet <PUB_KEY> - Associate user's wallet public key\n"
+      commands += "/enroll-transaction <TRX_ID> - Verify membership payment to degenbible.sol with payment transaction id & gain membership\n"
+
+      await message.reply({ content: commands, ephemeral: true })
+      return false
+    }
+
     // get enroll price
     if (message.content == "/enroll-price") {
-      const enrollPrice = process.env.ENROLL_PRICE_SOL
+      const enrollPrice = process.env.ENROLL_PRICE
       await message.reply({ content: `Current enrollment price: ${ enrollPrice } sol`, ephemeral: true })
+      return false
+    }
+
+    // get status
+    if (message.content == "/status") {
+      const discordId = message.author.id
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( user ) {
+        let status = `Trial - Active until ${ Moment( user.trialEnd ).format('lll') }`
+        if ( user.isEnrolled ) status = `Member - Enrolled on ${ Moment( user.enrolledAt ).format('lll') }`
+        if ( user.isOG ) status = "OG Member"
+        await message.reply({ content: status, ephemeral: true })
+      }
+
       return false
     }
 
@@ -107,7 +154,7 @@ export const StartListener = async (listener) => {
       const discordId = message.author.id
       const user = await getUserByDiscord(discordId, discordHandleErr)
       if ( user ) {
-        await message.reply({ content: `Wallet: ${user.walletPublicKey}`, ephemeral: true })
+        await message.reply({ content: `Wallet: ${user.walletPublicKey || "Not Set"}`, ephemeral: true })
       }
 
       return false
@@ -123,11 +170,11 @@ export const StartListener = async (listener) => {
         });
         return false
       }
+      const discordId = message.author.id
       const user = await getUserByDiscord(discordId, discordHandleErr)
       if ( !user ) return false
 
       const walletPublicKey = splitMsg[1]
-      const discordId = message.author.id
       const updSuccess = await updateUser(
         { discordId, update: { walletPublicKey }},
         async (content) => {
@@ -136,6 +183,64 @@ export const StartListener = async (listener) => {
       )
       if ( updSuccess ) {
         await message.reply({ content: "Wallet successfully updated", ephemeral: true })
+      }
+
+      return false
+    }
+
+    // get inviter
+    if (message.content == "/get-referrer") {
+      const discordId = message.author.id
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( user ) {
+        let inviterTxt = "None"
+        if ( user.referrerDiscordId ) {
+          const inviter = await getUserByDiscord(user.referrerDiscordId, discordHandleErr)
+          inviterTxt = inviter.discordName
+        }
+        await message.reply({ content: `Inviter: ${inviterTxt}\nInvite code: ${ user.inviteId || "None" }`, ephemeral: true })
+      }
+
+      return false
+    }
+
+    // get referrals
+    if (message.content == "/get-referrals") {
+      const discordId = message.author.id
+
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( !user ) {
+        await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
+        return false
+      }
+      if ( !user.isOG || !user.isEnrolled ) {
+        await message.reply({ content: "Referral program only available to members and OG.", ephemeral: true })
+        return false
+      }
+
+      const referrals = await getReferrals(discordId, discordHandleErr)
+      if ( referrals ) {
+        const {
+          currentStart,
+          currentEnd,
+          prevStart,
+          currentReferrals = [],
+          currentEnrollees = [],
+          prevReferrals = [],
+          prevEnrollees = [],
+        } = referrals
+
+        let response = `Current Period: ${ Moment( currentStart ).format('lll') } - ${ Moment( currentEnd ).format('lll') }\n`
+        response += `Joined (${ currentReferrals.length }) - ${ currentReferrals.map( r => r.discordName ).join(", ") || "None" }\n`
+        response += `Enrolled (${ currentEnrollees.length }) - ${ currentEnrollees.map( r => r.discordName ).join(", ") || "None" }\n`
+        response += `Bounties - ${ currentEnrollees.reduce((prev, curr) => prev + curr, 0.0) } SOL\n\n`
+
+        response += `Previous Period: ${ Moment( prevStart ).format('lll') } - ${ Moment( currentStart ).format('lll') }\n`
+        response += `Joined (${ prevReferrals.length }) - ${ prevReferrals.map( r => r.discordName ).join(", ") || "None" }\n`
+        response += `Enrolled (${ prevEnrollees.length }) - ${ prevEnrollees.map( r => r.discordName ).join(", ") || "None" }\n`
+        response += `Bounties - ${ prevEnrollees.reduce((prev, curr) => prev + curr, 0.0) } SOL\n`
+
+        await message.reply({ content: response, ephemeral: true })
       }
 
       return false
@@ -159,7 +264,7 @@ export const StartListener = async (listener) => {
         await message.reply({ content: "Your wallet is not set up yet please use /set-wallet first", ephemeral: true })
         return false
       }
-      if ( !user.isEnrolled ) {
+      if ( user.isEnrolled ) {
         await message.reply({ content: "User already enrolled", ephemeral: true })
         return false
       }
@@ -189,7 +294,7 @@ export const StartListener = async (listener) => {
 
         // validate payment amount
         const treasuryBalChg = await checkBalChange(trx, treasuryAddr)
-        const enrollPrice = process.env.ENROLL_PRICE_SOL
+        const enrollPrice = process.env.ENROLL_PRICE
         if ( treasuryBalChg < enrollPrice ) {
           await message.reply({
             content: `Transaction amount ${ treasuryBalChg } is less than fee of ${ enrollPrice }`,
@@ -205,18 +310,24 @@ export const StartListener = async (listener) => {
             enrolledAt: Moment(),
             transactionId: trxAddr,
             transactionAmount: treasuryBalChg,
+            bounty: parseFloat( process.env.BOUNTY_PRICE ),
           }},
           discordHandleErr,
         )
-        if ( updateSucc ) {
-          const server = listener.guilds.cache.get(process.env.SERVER_ID);
-          const msgUser = server.members.cache.get(discordId);
-          await msgUser.roles.add(process.env.MEMBER_ROLE_ID)
-          await message.reply({
-            content: `Enrollment confirmed!`,
-            ephemeral: true,
-          });
-        }
+        if (!updateSucc) return false;
+
+        // add role
+        const server = listener.guilds.cache.get(process.env.SERVER_ID);
+        const msgUser = server.members.cache.get(discordId);
+        await msgUser.roles.add(process.env.MEMBER_ROLE_ID)
+        await message.reply({
+          content: `Enrollment confirmed!`,
+          ephemeral: true,
+        });
+
+        // broadcast event
+        const chann = listener.channels.cache.get(process.env.CHANNEL_MEMBERSHIP)
+        chann.send({ content: `${ user.discordName } just Enrolled for ${ treasuryBalChg } SOL!` });
       } catch(e) {
         await message.reply({
           content: `Error: ${e}`,
