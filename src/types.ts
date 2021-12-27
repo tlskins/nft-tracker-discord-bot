@@ -231,16 +231,77 @@ export interface IToken {
   topAttributes: [TokenAttributes];
 }
 
+export interface IUserResp {
+  data: IUserData;
+}
+
+export interface IUserData {
+  user: IUser;
+}
+
 export interface IUser {
   id: string;
   discordId: string;
   discordName: string;
   verified: boolean;
   isOG: boolean;
+  isEnrolled: boolean;
+  enrolledAt?: string;
   inactiveDate?: string;
   trialEnd: string;
   trackedWallets: [string];
   hasWalletTracker: boolean;
+  walletPublicKey: string;
+
+  referrerDiscordId: string;
+  inviteId: string;
+  bounty: number;
+}
+
+export interface ICreateUser {
+  discordId: string;
+  discordName: string;
+  referrerDiscordId: string;
+  inviteId: string;
+  lastJoined: string;
+}
+
+export interface IUpdateUser {
+  walletPublicKey?: string;
+
+  isEnrolled?: boolean;
+  transactionId?: string;
+  transactionAmount?: number;
+  enrolledAt?: string;
+
+  referrerDiscordId?: string;
+  inviteId?: string;
+  lastJoined?: string;
+  bounty?: number;
+}
+
+export interface IDiscordUpdateUser {
+  discordId: string;
+  update: IUpdateUser;
+}
+
+export interface IReferralsResp {
+  data: IReferralsData;
+}
+
+export interface IReferralsData {
+  referrals: IReferrals;
+}
+
+export interface IReferrals {
+  currentEnd: string;
+  currentStart: string;
+  prevStart: string;
+
+  currentReferrals: IUser[];
+  currentEnrollees: IUser[];
+  prevReferrals: IUser[];
+  prevEnrollees: IUser[];
 }
 
 export interface GetTokenAlertsResp {
