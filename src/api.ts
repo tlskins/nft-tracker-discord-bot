@@ -14,6 +14,8 @@ import {
   IUserResp,
   IReferralsResp,
   IReferrals,
+  IEnrollCountResp,
+  IEnrollCount,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 import axios, { AxiosError } from "axios";
@@ -179,6 +181,28 @@ export const getUserByDiscord = async (
     if (axios.isAxiosError(e)) {
       const serverErr = e as AxiosError<ServerError>;
       const errMsg = `Error finding user: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+    return undefined;
+  }
+};
+
+export const geEnrolledCount = async (
+  round: number,
+  handleErr: (msg: string) => Promise<void>
+): Promise<IEnrollCount | undefined> => {
+  console.log(`Getting enrolled count for round ${round}...`);
+  try {
+    const resp: IEnrollCountResp = await rest.get(`/users/enrolled/${round}`);
+
+    return resp.data;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `Error getting enroll count: ${serverErr.response?.data?.message}`;
       console.error(errMsg);
       handleErr(errMsg);
     } else {

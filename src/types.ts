@@ -231,6 +231,15 @@ export interface IToken {
   topAttributes: [TokenAttributes];
 }
 
+export interface IEnrollCountResp {
+  data: IEnrollCount;
+}
+
+export interface IEnrollCount {
+  round: number;
+  count: number;
+}
+
 export interface IUserResp {
   data: IUserData;
 }
