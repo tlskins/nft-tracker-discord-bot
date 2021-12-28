@@ -54,10 +54,10 @@ class CronBot {
   handleBot(): void {
     this.sendMessages();
     const min = Moment().minute();
-    // run every 5 minutes
-    if (min % 5 === 0) {
+    // run every 30 minutes
+    if (min % 30 === 0) {
       syncSubscriptions(this.sendErrMsg("sync-subs-err"));
-      this.checkTokenAlerts();
+      // this.checkTokenAlerts(); // disable token trackers for now
     }
   }
 
