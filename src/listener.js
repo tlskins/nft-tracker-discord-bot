@@ -161,8 +161,8 @@ export const StartListener = async (listener) => {
       const discordId = message.author.id
       const user = await getUserByDiscord(discordId, discordHandleErr)
       if ( user ) {
-        let status = `Trial - Active until ${ Moment( user.trialEnd ).format('dddd, MMM Do h:mm a zz') }`
-        if ( user.isEnrolled ) status = `Member - Enrolled on ${ Moment( user.enrolledAt ).format('dddd, MMM Do h:mm a zz') }`
+        let status = `Trial - Active until ${ Moment( user.trialEnd ).format('dddd, MMM Do h:mm a Z') }`
+        if ( user.isEnrolled ) status = `Member - Enrolled on ${ Moment( user.enrolledAt ).format('dddd, MMM Do h:mm a Z') }`
         if ( user.isOG ) status = "OG Member"
         await message.reply({ content: status, ephemeral: true })
       }
@@ -251,12 +251,12 @@ export const StartListener = async (listener) => {
           prevEnrollees = [],
         } = referrals
 
-        let response = `Current Period: ${ Moment( currentStart ).format('dddd, MMM Do h:mm a zz') } - ${ Moment( currentEnd ).format('dddd, MMM Do h:mm a zz') }\n`
+        let response = `Current Period: ${ Moment( currentStart ).format('dddd, MMM Do h:mm a Z') } - ${ Moment( currentEnd ).format('dddd, MMM Do h:mm a Z') }\n`
         response += `Joined (${ currentReferrals.length }) - ${ currentReferrals.map( r => r.discordName ).join(", ") || "None" }\n`
         response += `Enrolled (${ currentEnrollees.length }) - ${ currentEnrollees.map( r => r.discordName ).join(", ") || "None" }\n`
         response += `Bounties - ${ currentEnrollees.reduce((prev, curr) => prev.bounty + curr.bounty, 0.0) } SOL\n\n`
 
-        response += `Previous Period: ${ Moment( prevStart ).format('dddd, MMM Do h:mm a zz') } - ${ Moment( currentStart ).format('dddd, MMM Do h:mm a zz') }\n`
+        response += `Previous Period: ${ Moment( prevStart ).format('dddd, MMM Do h:mm a Z') } - ${ Moment( currentStart ).format('dddd, MMM Do h:mm a Z') }\n`
         response += `Joined (${ prevReferrals.length }) - ${ prevReferrals.map( r => r.discordName ).join(", ") || "None" }\n`
         response += `Enrolled (${ prevEnrollees.length }) - ${ prevEnrollees.map( r => r.discordName ).join(", ") || "None" }\n`
         response += `Bounties - ${ prevEnrollees.reduce((prev, curr) => prev.bounty + curr.bounty, 0.0) } SOL\n`
