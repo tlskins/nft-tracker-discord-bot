@@ -5,7 +5,7 @@ const { Client, Intents } = require("discord.js");
 import {
   updateCollMap,
   updateUser,
-  geEnrolledCount,
+  getEnrollment,
   getReferrals,
   getUserByDiscord,
   createUser,
@@ -39,13 +39,18 @@ const discordHandleErr = async (content) => {
 }
 
 let guildInvites = new Map()
+let enrollment
 
-const currentRoundEnrolled = async () => {
-  const enrollRd = parseInt(process.env.ENROLL_ROUND)
-  const enrollRdMax = process.env.ENROLL_ROUND_MAX
-  const enrollData = await geEnrolledCount( enrollRd, msg => console.log(msg) )
+const syncEnrollment = async () => {
+  enrollment = await getEnrollment( msg => console.log(msg) )
+}
 
-  return `Rd ${enrollRd} - Members ${enrollData?.count || 0}/${enrollRdMax}`
+const getMembershipString = enrollment => {
+  return `Rd ${enrollment.round} - Members ${enrollment.currentCount}/${enrollment.limit}`
+}
+
+const getEnrollPriceStr = enrollment => {
+  return `Rd ${enrollment.round} - Enroll Price: ${enrollment.price} SOL`
 }
 
 export const StartListener = async (listener) => {
@@ -59,15 +64,20 @@ export const StartListener = async (listener) => {
     console.log("Invites tracker updated...")
 
     // update membership data
-    const enrollRd = parseInt(process.env.ENROLL_ROUND)
-    const enrollPrice = process.env.ENROLL_PRICE
+    await syncEnrollment()
+    const enrollPriceStr = getEnrollPriceStr(enrollment)
     const channPrice = listener.channels.cache.get(process.env.CHANNEL_ENROLL_PRICE)
-    channPrice.setName(`Rd ${enrollRd} - Enroll Price: ${enrollPrice} SOL`)
+    if ( channPrice.name !== enrollPriceStr) {
+      console.log('Updating channel enrollment price...')
+      channPrice.setName(enrollPriceStr)
+    }
 
+    const enrolledTxt = getMembershipString(enrollment)
     const channEnrolled = listener.channels.cache.get(process.env.CHANNEL_RD_MEMBERS)
-    const enrolledTxt = await currentRoundEnrolled()
-    console.log('enrolledTxt: ', enrolledTxt)
-    channEnrolled.setName(enrolledTxt)
+    if ( channEnrolled.name !== enrolledTxt) {
+      console.log('Updating channel enrollment membership...')
+      channEnrolled.setName(enrolledTxt)
+    }
   });
 
   // update invite cache when new ones created
@@ -150,8 +160,11 @@ export const StartListener = async (listener) => {
 
     // get enroll price
     if (message.content == "/enroll-price") {
-      const enrollPrice = process.env.ENROLL_PRICE
-      await message.reply({ content: `Current enrollment price: ${ enrollPrice } sol\nTreasury Address: degenbible.sol`, ephemeral: true })
+      await syncEnrollment()
+      let content = `Current enrollment price: ${ enrollment.price } SOL\n`
+      content += `Current round membership: ${ enrollment.currentCount }/${ enrollment.limit }\n`
+      content += `Treasury Address: degenbible.sol\n`
+      await message.reply({ content, ephemeral: true })
       return false
     }
 
@@ -314,7 +327,7 @@ export const StartListener = async (listener) => {
 
         // validate payment amount
         const treasuryBalChg = await checkBalChange(trx, treasuryAddr)
-        const enrollPrice = process.env.ENROLL_PRICE
+        const enrollPrice = enrollment.price
         if ( treasuryBalChg < enrollPrice ) {
           await message.reply({
             content: `Transaction amount ${ treasuryBalChg } is less than fee of ${ enrollPrice }`,
@@ -324,17 +337,19 @@ export const StartListener = async (listener) => {
         }
 
         // enrollment successful
-        const enrollRound = parseInt(process.env.ENROLL_ROUND)
         const updateSucc = await updateUser(
           { discordId, update: {
             isEnrolled: true,
-            enrollRound,
+            enrollRound: enrollment.round,
             enrolledAt: Moment(),
             transactionId: trxAddr,
             transactionAmount: treasuryBalChg,
-            bounty: parseFloat( process.env.BOUNTY_PRICE ),
+            bounty: enrollment.defaultBounty,
           }},
-          discordHandleErr,
+          errMsg => message.reply({
+            content: errMsg,
+            ephemeral: true,
+          }),
         )
         if (!updateSucc) return false;
 
@@ -352,7 +367,8 @@ export const StartListener = async (listener) => {
         chann.send({ content: `${ user.discordName } just Enrolled for ${ treasuryBalChg } SOL!` });
 
         const channEnrolled = listener.channels.cache.get(process.env.CHANNEL_RD_MEMBERS)
-        const enrolledTxt = await currentRoundEnrolled()
+        await syncEnrollment()
+        const enrolledTxt = getMembershipString(enrollment)
         console.log('enrolledTxt: ', enrolledTxt)
         channEnrolled.setName(enrolledTxt)
       } catch(e) {

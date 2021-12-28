@@ -231,15 +231,6 @@ export interface IToken {
   topAttributes: [TokenAttributes];
 }
 
-export interface IEnrollCountResp {
-  data: IEnrollCount;
-}
-
-export interface IEnrollCount {
-  round: number;
-  count: number;
-}
-
 export interface IUserResp {
   data: IUserData;
 }
@@ -349,4 +340,22 @@ export interface ICollectionMapping {
   pumpRole: string;
   totalSupply: number;
   updateAuthority: string;
+}
+
+export interface IEnrollmentResp {
+  data: IEnrollmentData;
+}
+
+export interface IEnrollmentData {
+  enrollment: IEnrollment;
+}
+
+export interface IEnrollment {
+  id: string;
+  round: number;
+  limit: number;
+  price: number;
+  time: string;
+  currentCount: number;
+  defaultBounty: number;
 }

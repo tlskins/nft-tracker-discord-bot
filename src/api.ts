@@ -14,8 +14,8 @@ import {
   IUserResp,
   IReferralsResp,
   IReferrals,
-  IEnrollCountResp,
-  IEnrollCount,
+  IEnrollmentResp,
+  IEnrollment,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 import axios, { AxiosError } from "axios";
@@ -190,19 +190,18 @@ export const getUserByDiscord = async (
   }
 };
 
-export const geEnrolledCount = async (
-  round: number,
+export const getEnrollment = async (
   handleErr: (msg: string) => Promise<void>
-): Promise<IEnrollCount | undefined> => {
-  console.log(`Getting enrolled count for round ${round}...`);
+): Promise<IEnrollment | undefined> => {
+  console.log(`Getting enrollment data...`);
   try {
-    const resp: IEnrollCountResp = await rest.get(`/users/enrolled/${round}`);
+    const resp: IEnrollmentResp = await rest.get("/enrollment");
 
-    return resp.data;
+    return resp.data.enrollment;
   } catch (e) {
     if (axios.isAxiosError(e)) {
       const serverErr = e as AxiosError<ServerError>;
-      const errMsg = `Error getting enroll count: ${serverErr.response?.data?.message}`;
+      const errMsg = `Error getting enrollment data: ${serverErr.response?.data?.message}`;
       console.error(errMsg);
       handleErr(errMsg);
     } else {
