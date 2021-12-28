@@ -152,7 +152,7 @@ export const StartListener = async (listener) => {
     // get enroll price
     if (message.content == "/enroll-price") {
       const enrollPrice = process.env.ENROLL_PRICE
-      await message.reply({ content: `Current enrollment price: ${ enrollPrice } sol`, ephemeral: true })
+      await message.reply({ content: `Current enrollment price: ${ enrollPrice } sol\nTreasury Address: degenbible.sol`, ephemeral: true })
       return false
     }
 
@@ -161,8 +161,8 @@ export const StartListener = async (listener) => {
       const discordId = message.author.id
       const user = await getUserByDiscord(discordId, discordHandleErr)
       if ( user ) {
-        let status = `Trial - Active until ${ Moment( user.trialEnd ).format('lll') }`
-        if ( user.isEnrolled ) status = `Member - Enrolled on ${ Moment( user.enrolledAt ).format('lll') }`
+        let status = `Trial - Active until ${ Moment( user.trialEnd ).format('llll z') }`
+        if ( user.isEnrolled ) status = `Member - Enrolled on ${ Moment( user.enrolledAt ).format('llll z') }`
         if ( user.isOG ) status = "OG Member"
         await message.reply({ content: status, ephemeral: true })
       }
@@ -251,15 +251,15 @@ export const StartListener = async (listener) => {
           prevEnrollees = [],
         } = referrals
 
-        let response = `Current Period: ${ Moment( currentStart ).format('lll') } - ${ Moment( currentEnd ).format('lll') }\n`
+        let response = `Current Period: ${ Moment( currentStart ).format('llll z') } - ${ Moment( currentEnd ).format('llll z') }\n`
         response += `Joined (${ currentReferrals.length }) - ${ currentReferrals.map( r => r.discordName ).join(", ") || "None" }\n`
         response += `Enrolled (${ currentEnrollees.length }) - ${ currentEnrollees.map( r => r.discordName ).join(", ") || "None" }\n`
-        response += `Bounties - ${ currentEnrollees.reduce((prev, curr) => prev + curr, 0.0) } SOL\n\n`
+        response += `Bounties - ${ currentEnrollees.reduce((prev, curr) => prev.bounty + curr.bounty, 0.0) } SOL\n\n`
 
-        response += `Previous Period: ${ Moment( prevStart ).format('lll') } - ${ Moment( currentStart ).format('lll') }\n`
+        response += `Previous Period: ${ Moment( prevStart ).format('llll z') } - ${ Moment( currentStart ).format('llll z') }\n`
         response += `Joined (${ prevReferrals.length }) - ${ prevReferrals.map( r => r.discordName ).join(", ") || "None" }\n`
         response += `Enrolled (${ prevEnrollees.length }) - ${ prevEnrollees.map( r => r.discordName ).join(", ") || "None" }\n`
-        response += `Bounties - ${ prevEnrollees.reduce((prev, curr) => prev + curr, 0.0) } SOL\n`
+        response += `Bounties - ${ prevEnrollees.reduce((prev, curr) => prev.bounty + curr.bounty, 0.0) } SOL\n`
 
         await message.reply({ content: response, ephemeral: true })
       }
