@@ -254,12 +254,12 @@ export const StartListener = async (listener) => {
         let response = `Current Period: ${ Moment( currentStart ).format('dddd, MMM Do h:mm a Z') } - ${ Moment( currentEnd ).format('dddd, MMM Do h:mm a Z') }\n`
         response += `Joined (${ currentReferrals.length }) - ${ currentReferrals.map( r => r.discordName ).join(", ") || "None" }\n`
         response += `Enrolled (${ currentEnrollees.length }) - ${ currentEnrollees.map( r => r.discordName ).join(", ") || "None" }\n`
-        response += `Bounties - ${ currentEnrollees.reduce((prev, curr) => { return prev.bounty + curr.bounty }, 0.0) } SOL\n\n`
+        response += `Bounties - ${ currentEnrollees.reduce((acc, curr) => acc + curr.bounty, 0.0) } SOL\n\n`
 
         response += `Previous Period: ${ Moment( prevStart ).format('dddd, MMM Do h:mm a Z') } - ${ Moment( currentStart ).format('dddd, MMM Do h:mm a Z') }\n`
         response += `Joined (${ prevReferrals.length }) - ${ prevReferrals.map( r => r.discordName ).join(", ") || "None" }\n`
         response += `Enrolled (${ prevEnrollees.length }) - ${ prevEnrollees.map( r => r.discordName ).join(", ") || "None" }\n`
-        response += `Bounties - ${ prevEnrollees.reduce((prev, curr) => { return prev.bounty + curr.bounty }, 0.0) } SOL\n`
+        response += `Bounties - ${ prevEnrollees.reduce((acc, curr) => acc + curr.bounty, 0.0) } SOL\n`
 
         await message.reply({ content: response, ephemeral: true })
       }
