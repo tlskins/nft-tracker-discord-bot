@@ -41,7 +41,18 @@ export const getPrice = (listing: MarketListing): string => {
 };
 
 export const getSuggestedPriceTxt = (listing: MarketListing): string => {
-  return (listing.suggestedPrice || 0.0).toFixed(2);
+  let result = "💎";
+  if (listing.score > 1.0) {
+    result = "💎💎💎💎💎";
+  } else if (listing.score > 0.75) {
+    result = "💎💎💎💎";
+  } else if (listing.score > 0.5) {
+    result = "💎💎💎💎";
+  } else if (listing.score > 0.25) {
+    result = "💎💎💎💎";
+  }
+
+  return result;
 };
 
 export const getFloorPriceTxt = (mktSum: MarketSummary): string => {
@@ -96,16 +107,12 @@ export const getBestListingTitle = (listing: MarketListing): string => {
   const prefix = getListingPrefix(listing);
   const listPrice = getPrice(listing);
 
-  return `${prefix} @ ${listPrice} - ${topAttrs} (SUGG ${suggPrice})`;
+  return `${prefix} @ ${listPrice} - ${topAttrs} (VALUE ${suggPrice})`;
 };
 
 export const getListingPrefix = (listing: MarketListing): string => {
   return listing.rank ? `Rank ${listing.rank}` : listing.title;
 };
-
-// export const getBibleLink = (path: string): string => {
-//   return `https://www.degenbible.com/collections/${path}`;
-// };
 
 export const buildBestTitle = (
   tracker: CollectionTracker,
@@ -121,10 +128,7 @@ export const buildBestTitle = (
   } SOL`;
 };
 
-export const buildBestEmbed = (
-  tracker: CollectionTracker,
-  path: string
-): MessageEmbed => {
+export const buildBestEmbed = (tracker: CollectionTracker): MessageEmbed => {
   const { collection, currentBest } = tracker;
 
   const embed = new MessageEmbed()
@@ -136,10 +140,6 @@ export const buildBestEmbed = (
       `${getListingPrefix(currentBest)} @ ${getPrice(currentBest)}`
     )
     .addFields(
-      // {
-      //   name: `Analysis`,
-      //   value: getBibleLink(path),
-      // },
       {
         name: `Best Listing`,
         value: `${currentBest.title}`,
@@ -151,7 +151,7 @@ export const buildBestEmbed = (
         inline: true,
       },
       {
-        name: `Sugg Price`,
+        name: `Value`,
         value: getSuggestedPriceTxt(currentBest),
         inline: true,
       },
@@ -199,7 +199,7 @@ export const buildPumpTitle = (
   if (recentFloorChange > 0.0) {
     wasFloor = ` Was: ${(currFloor - recentFloorChange).toFixed(2)} @ -5min `;
   }
-  return `${mentions}Floor Pump Alert! - Now: ${floor} ${wasFloor} Pred: ${predictedFloor.toFixed(
+  return `${mentions}Floor Pump Alert! (BETA) - Now: ${floor} ${wasFloor} Pred: ${predictedFloor.toFixed(
     2
   )} in ${predWindowMins} min | ${soldDesc}`;
 };

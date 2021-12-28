@@ -178,7 +178,7 @@ class CronBot {
 
     // broadcast best
     if (currentBest?.isNew) {
-      const bestEmbed = buildBestEmbed(tracker, apiPath);
+      const bestEmbed = buildBestEmbed(tracker);
       const bestTitle = buildBestTitle(tracker, collMap);
       await webhook.send({
         content: bestTitle,

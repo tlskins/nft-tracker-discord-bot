@@ -44,7 +44,6 @@ const currentRoundEnrolled = async () => {
   const enrollRd = parseInt(process.env.ENROLL_ROUND)
   const enrollRdMax = process.env.ENROLL_ROUND_MAX
   const enrollData = await geEnrolledCount( enrollRd, msg => console.log(msg) )
-  console.log('enrollata: ', enrollData)
 
   return `Rd ${enrollRd} - Members ${enrollData?.count || 0}/${enrollRdMax}`
 }
