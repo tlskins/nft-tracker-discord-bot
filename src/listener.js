@@ -263,12 +263,12 @@ export const StartListener = async (listener) => {
           prevEnrollees = [],
         } = referrals
 
-        let response = `Current Period: ${ Moment( currentStart ).format('dddd, MMM Do h:mm A ZZ') } - ${ Moment( currentEnd ).format('dddd, MMM Do h:mm A ZZ') }\n`
+        let response = `Current Period: ${ Moment( currentStart ).format('dddd, MMM Do') } - ${ Moment( currentEnd ).format('dddd, MMM Do') }\n`
         response += `Joined (${ currentReferrals.length }) - ${ currentReferrals.map( r => r.discordName ).join(", ") || "None" }\n`
         response += `Enrolled (${ currentEnrollees.length }) - ${ currentEnrollees.map( r => r.discordName ).join(", ") || "None" }\n`
         response += `Bounties - ${ currentEnrollees.reduce((acc, curr) => acc + curr.bounty, 0.0) } SOL\n\n`
 
-        response += `Previous Period: ${ Moment( prevStart ).format('dddd, MMM Do h:mm A ZZ') } - ${ Moment( currentStart ).format('dddd, MMM Do h:mm A ZZ') }\n`
+        response += `Previous Period: ${ Moment( prevStart ).format('dddd, MMM Do') } - ${ Moment( currentStart ).format('dddd, MMM Do') }\n`
         response += `Joined (${ prevReferrals.length }) - ${ prevReferrals.map( r => r.discordName ).join(", ") || "None" }\n`
         response += `Enrolled (${ prevEnrollees.length }) - ${ prevEnrollees.map( r => r.discordName ).join(", ") || "None" }\n`
         response += `Bounties - ${ prevEnrollees.reduce((acc, curr) => acc + curr.bounty, 0.0) } SOL\n`
