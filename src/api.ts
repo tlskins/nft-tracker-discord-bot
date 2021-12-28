@@ -83,7 +83,7 @@ export const getMarketListings = async (
 export const syncSubscriptions = async (
   handleErr: (msg: string) => Promise<void>
 ): Promise<void> => {
-  console.log("syncing subscriptions...");
+  console.log("*** syncing subscriptions...");
   try {
     await rest.post("/subscriptions/sync");
   } catch (e) {
@@ -96,6 +96,7 @@ export const syncSubscriptions = async (
       console.error(e);
     }
   }
+  console.log("*** subscriptions sync complete...");
 };
 
 export const updateUser = async (
