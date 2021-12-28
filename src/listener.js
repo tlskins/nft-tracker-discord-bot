@@ -246,7 +246,7 @@ export const StartListener = async (listener) => {
         await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
         return false
       }
-      if ( !user.isOG || !user.isEnrolled ) {
+      if ( !user.isOG && !user.isEnrolled ) {
         await message.reply({ content: "Referral program only available to members and OG.", ephemeral: true })
         return false
       }
