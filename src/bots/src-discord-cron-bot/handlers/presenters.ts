@@ -186,7 +186,7 @@ export const buildPumpTitle = (
   if (saleCounts.length > 0) {
     let count = 0;
     const now = Moment();
-    const minutes = 15;
+    const minutes = 16;
     saleCounts.forEach((sale) => {
       if (Moment(sale.time).isAfter(now.subtract(minutes, "minutes"))) {
         count += 1;
