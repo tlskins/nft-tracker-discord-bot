@@ -200,23 +200,37 @@ class CronBot {
 
     // broadcast pump alert
     if (isPump) {
-      // send to collection channel
       const pumpEmbed = buildPumpEmbed(tracker);
-      await webhook.send({
-        content: buildPumpTitle(tracker, collMap, true),
-        username: "Degen Bible Bot",
-        embeds: [pumpEmbed],
-      });
+      // stupid hack to catch bad predictions
+      if (tracker.marketSummary.predictedFloor < 1000) {
+        // send to collection channel
+        await webhook.send({
+          content: buildPumpTitle(tracker, collMap, true),
+          username: "Degen Bible Bot",
+          embeds: [pumpEmbed],
+        });
 
-      // send to market sum
-      const mktSumHook = await this._getWebhook(
-        process.env.CHANNEL_MKT_SUMMARY as string
-      );
-      await mktSumHook.send({
-        content: buildPumpTitle(tracker, collMap, false),
-        username: "Degen Bible Bot",
-        embeds: [pumpEmbed],
-      });
+        // send to market sum
+        const mktSumHook = await this._getWebhook(
+          process.env.CHANNEL_MKT_SUMMARY as string
+        );
+        await mktSumHook.send({
+          content: buildPumpTitle(tracker, collMap, false),
+          username: "Degen Bible Bot",
+          embeds: [pumpEmbed],
+        });
+      } else {
+        // send to errors channel
+        const errorsHook = await this._getWebhook(
+          process.env.CHANNEL_TRACKER_ERRS as string
+        );
+        await errorsHook.send({
+          content:
+            "*** BAD PUMP *** " + buildPumpTitle(tracker, collMap, false),
+          username: "Degen Bible Bot",
+          embeds: [pumpEmbed],
+        });
+      }
     }
 
     const lastBroadcastAt = tracker.lastBroadcastAt

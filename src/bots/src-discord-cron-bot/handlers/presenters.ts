@@ -42,14 +42,14 @@ export const getPrice = (listing: MarketListing): string => {
 
 export const getSuggestedPriceTxt = (listing: MarketListing): string => {
   let result = "💎";
-  if (listing.score > 1.0) {
+  if (listing.score > 2.0) {
     result = "💎💎💎💎💎";
-  } else if (listing.score > 0.75) {
+  } else if (listing.score > 1.5) {
     result = "💎💎💎💎";
+  } else if (listing.score > 1.0) {
+    result = "💎💎💎";
   } else if (listing.score > 0.5) {
-    result = "💎💎💎💎";
-  } else if (listing.score > 0.25) {
-    result = "💎💎💎💎";
+    result = "💎💎";
   }
 
   return result;
@@ -182,11 +182,17 @@ export const buildPumpTitle = (
   }
   const { saleCounts, predictedFloor, predWindowMins, recentFloorChange } =
     tracker.marketSummary;
-  let soldDesc = "0 sold @ 0 mins";
+  let soldDesc = "";
   if (saleCounts.length > 0) {
-    const count = saleCounts[0].count;
-    const mins = Moment().diff(Moment(saleCounts[0].time), "minutes");
-    soldDesc = `${count} sold @ ${mins} mins`;
+    let count = 0;
+    const now = Moment();
+    const minutes = 15;
+    saleCounts.forEach((sale) => {
+      if (Moment(sale.time).isAfter(now.subtract(minutes, "minutes"))) {
+        count += 1;
+      }
+    });
+    soldDesc = ` - ${count} sold in last ${minutes} mins`;
   }
 
   const currFloor = tracker.currentFloor.price;
@@ -197,11 +203,14 @@ export const buildPumpTitle = (
 
   let wasFloor = "";
   if (recentFloorChange > 0.0) {
-    wasFloor = ` Was: ${(currFloor - recentFloorChange).toFixed(2)} @ -5min `;
+    wasFloor = ` Was: ${(currFloor - recentFloorChange).toFixed(2)} 5min ago`;
   }
-  return `${mentions}Floor Pump Alert! (BETA) - Now: ${floor} ${wasFloor} Pred: ${predictedFloor.toFixed(
-    2
-  )} in ${predWindowMins} min | ${soldDesc}`;
+
+  let predFloor = "";
+  if (predictedFloor > currFloor) {
+    predFloor = ` Pred: ${predictedFloor.toFixed(2)} in ${predWindowMins} min`;
+  }
+  return `${mentions}Floor Pump Alert! - Now: ${floor} ${wasFloor}${predFloor}${soldDesc}`;
 };
 
 export const buildBestTraitEmbedFields = (
@@ -368,7 +377,6 @@ export const buildMarketEmbed = (tracker: CollectionTracker): MessageEmbed => {
   const embed = new MessageEmbed()
     .setColor("#0099ff")
     .setTitle(`${collection} Market Summary`)
-    // .setURL(getBibleLink(path))
     .setAuthor("Degen Bible Bot")
     .setDescription(description)
     .addFields(...buildMarketEmbedFields(marketSummary))
