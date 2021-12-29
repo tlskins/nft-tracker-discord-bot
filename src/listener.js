@@ -53,6 +53,10 @@ const getEnrollPriceStr = enrollment => {
   return `Rd ${enrollment.round} - Enroll Price: ${enrollment.price} SOL`
 }
 
+const getEnrollBountyStr = enrollment => {
+  return `Bounty Fee: ${enrollment.defaultBounty} SOL`
+}
+
 export const StartListener = async (listener) => {
   listener.on("ready", async () => {
     console.log(`Logged in as ${listener.user.tag}!`);
@@ -77,6 +81,13 @@ export const StartListener = async (listener) => {
     if ( channEnrolled.name !== enrolledTxt) {
       console.log('Updating channel enrollment membership...')
       channEnrolled.setName(enrolledTxt)
+    }
+
+    const bountyTxt = getEnrollBountyStr(enrollment)
+    const channBounty = listener.channels.cache.get(process.env.CHANNEL_BOUNTY_FEE)
+    if ( channBounty.name !== bountyTxt) {
+      console.log('Updating channel bounty fee...')
+      channBounty.setName(bountyTxt)
     }
   });
 
@@ -264,6 +275,7 @@ export const StartListener = async (listener) => {
         } = referrals
 
         let response = `Current Period: ${ Moment( currentStart ).format('dddd, MMM Do') } - ${ Moment( currentEnd ).format('dddd, MMM Do') }\n`
+        response += `Bounty reward per referral enrollment: ${ enrollment.price } SOL\n`
         response += `Joined (${ currentReferrals.length }) - ${ currentReferrals.map( r => r.discordName ).join(", ") || "None" }\n`
         response += `Enrolled (${ currentEnrollees.length }) - ${ currentEnrollees.map( r => r.discordName ).join(", ") || "None" }\n`
         response += `Bounties - ${ currentEnrollees.reduce((acc, curr) => acc + curr.bounty, 0.0) } SOL\n\n`
