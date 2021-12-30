@@ -248,6 +248,8 @@ export interface IUser {
   isEnrolled: boolean;
   enrolledAt?: string;
   inactiveDate?: string;
+  lastJoined: string;
+  lastLeft?: string;
   trialEnd: string;
   trackedWallets: [string];
   hasWalletTracker: boolean;
@@ -277,6 +279,7 @@ export interface IUpdateUser {
   referrerDiscordId?: string;
   inviteId?: string;
   lastJoined?: string;
+  lastLeft?: string;
   bounty?: number;
 }
 

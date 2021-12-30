@@ -148,6 +148,12 @@ export const StartListener = async (listener) => {
     // broadcast
     const chann = listener.channels.cache.get(process.env.CHANNEL_MEMBERSHIP)
     chann.send({ content: `${ member.user.username }#${member.user.discriminator} just left!`});
+    updateUser(
+      { discordId, update: { lastLeft: Moment() }},
+      async (errMsg) => {
+        await chann.send({ content: `Error updating user: ${ member.user.username }#${member.user.discriminator} ${errMsg}`});
+      }
+    )
   });
 
   // handle bot commands
