@@ -51,7 +51,7 @@ class CronBot {
     this.setCollectionMappings();
   }
 
-  handleBot(): void {
+  async handleBot(): Promise<Promise<void>> {
     this.sendMessages();
     const min = Moment().minute();
     // run every 30 minutes
@@ -59,6 +59,18 @@ class CronBot {
       syncSubscriptions(this.sendErrMsg("sync-subs-err"));
       // this.checkTokenAlerts(); // disable token trackers for now
     }
+
+    // seed all pump text
+    const webhook = await this._getWebhook(
+      process.env.CHANNEL_ALL_PUMPS as string
+    );
+    const pinMsgId = process.env.MARKETS_PIN_ID as string;
+    await webhook.editMessage(pinMsgId, {
+      content:
+        "React with a ⏰ to this message to subscribe to All Pump events",
+      embeds: [],
+    });
+    console.log("seeded all pumps...");
   }
 
   async sendDm(userId: string, message: string) {
@@ -311,50 +323,7 @@ class CronBot {
     console.log(
       `*** Processing batch ${batch} with size ${promiseArr.length}...`
     );
-    const promises = Promise.all(promiseArr);
-
-    const trackers = await promises;
-    const mktSums = trackers
-      .map((tracker) => tracker?.marketSummary)
-      .filter((sum) => !!sum);
-    const mktSumKey = "mktSummaries";
-
-    // send / update market msg
-    if (shouldBroadcast(this.broadcasts.get(mktSumKey))) {
-      const mktSumEmbed = buildAllMarketsEmbed(mktSums);
-      if (mktSumEmbed === undefined) {
-        return;
-      }
-      const mktMsg = {
-        content: "Market Summary",
-        username: "Degen Bible Bot",
-        embeds: [mktSumEmbed],
-      };
-
-      const webhook = await this._getWebhook(
-        process.env.CHANNEL_MKT_SUMMARY as string
-      );
-
-      // update pin or send to channel
-      const pinMsgId = process.env.MARKETS_PIN_ID;
-      if (pinMsgId) {
-        console.log(`updating markets pin...`);
-        await webhook.editMessage(pinMsgId, mktMsg);
-
-        // seed reactions for markets
-        const msg: Message = (await webhook.fetchMessage(pinMsgId)) as Message;
-        await msg.pin();
-        msg.react("🧹");
-        msg.react("📊");
-        msg.react("⏰");
-        // msg.react("🃏");
-      } else {
-        console.log(`markets pin not found sending to channel...`);
-        await webhook.send(mktMsg);
-        // await webhook.fetchMessage(sentMsg.id);
-      }
-      this.broadcasts.set(mktSumKey, Moment());
-    }
+    Promise.all(promiseArr);
   }
 
   private async _getWebhook(channelId: Snowflake): Promise<Webhook> {
