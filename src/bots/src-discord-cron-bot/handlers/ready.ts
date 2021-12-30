@@ -61,16 +61,16 @@ class CronBot {
     }
 
     // seed all pump text
-    const webhook = await this._getWebhook(
-      process.env.CHANNEL_ALL_PUMPS as string
-    );
-    const pinMsgId = process.env.MARKETS_PIN_ID as string;
-    await webhook.editMessage(pinMsgId, {
-      content:
-        "React with a ⏰ to this message to subscribe to All Pump events",
-      embeds: [],
-    });
-    console.log("seeded all pumps...");
+    // const webhook = await this._getWebhook(
+    //   process.env.CHANNEL_ALL_PUMPS as string
+    // );
+    // const pinMsgId = process.env.MARKETS_PIN_ID as string;
+    // await webhook.editMessage(pinMsgId, {
+    //   content:
+    //     "React with a ⏰ to this message to subscribe to All Pump events",
+    //   embeds: [],
+    // });
+    // console.log("seeded all pumps...");
   }
 
   async sendDm(userId: string, message: string) {
