@@ -6,6 +6,7 @@ import {
   ICreateUser,
   ITokenTracker,
   ILandingResp,
+  CollectionTrackerData,
   ICollectionMapping,
   ICollectionMappingResp,
   IUpsertCollectionMapping,
@@ -16,6 +17,9 @@ import {
   IReferrals,
   IEnrollmentResp,
   IEnrollment,
+  IFloorTrackersResp,
+  IFloorTrackerResp,
+  IFloorTracker,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 import axios, { AxiosError } from "axios";
@@ -54,14 +58,14 @@ export const getCollectionMappings = async (
 export const getMarketListings = async (
   collection: string,
   handleErr: (msg: string) => Promise<void>
-): Promise<CollectionTracker | undefined> => {
+): Promise<CollectionTrackerData | undefined> => {
   const startTime = Moment();
   try {
     const collectionData = (await rest.post(
       `collections/${collection}`
     )) as CollectionTrackerResp;
 
-    return collectionData.data.tracker;
+    return collectionData.data;
   } catch (e) {
     if (Moment().diff(startTime, "seconds") >= 6.9) {
       console.error(
@@ -291,6 +295,71 @@ export const updateCollMap = async (
     if (axios.isAxiosError(e)) {
       const serverErr = e as AxiosError<ServerError>;
       const errMsg = `error updating ${collId} mapping: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+  }
+};
+
+export const deleteFloorTrackers = async (
+  ids: [string],
+  handleErr: (msg: string) => Promise<void>
+): Promise<boolean> => {
+  try {
+    await rest.delete(`/floor-tracker`, { data: { ids } });
+    return true;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error deleting tracker: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+    return false;
+  }
+};
+
+export const createFloorTracker = async (
+  req: IFloorTracker,
+  handleErr: (msg: string) => Promise<void>
+): Promise<IFloorTracker | undefined> => {
+  try {
+    const trackerResp = (await rest.post(
+      `/floor-tracker`,
+      req
+    )) as IFloorTrackerResp;
+
+    return trackerResp.data.tracker;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error creating tracker: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+  }
+};
+
+export const getUserFloorTrackers = async (
+  discordId: string,
+  handleErr: (msg: string) => Promise<void>
+): Promise<IFloorTracker[] | undefined> => {
+  try {
+    const trackersResp = (await rest.get(
+      `/floor-tracker/${discordId}`
+    )) as IFloorTrackersResp;
+
+    return trackersResp.data.trackers;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error getting user floor trackers: ${serverErr.response?.data?.message}`;
       console.error(errMsg);
       handleErr(errMsg);
     } else {

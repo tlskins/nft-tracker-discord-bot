@@ -8,12 +8,16 @@ import {
   getEnrollment,
   getReferrals,
   getUserByDiscord,
+  createFloorTracker,
   createUser,
+  getUserFloorTrackers,
+  deleteFloorTrackers,
 } from "./api";
 import { checkBalChange, getSolTransaction } from "./solana";
 import {
   FindGlobalCollMapByPin,
   GetGlobalCollMap,
+  FindGlobalCollMapByChannel,
   UpdateGlobalCollMap,
 } from "./collMappings"
 
@@ -159,20 +163,73 @@ export const StartListener = async (listener) => {
   // handle bot commands
   listener.on("messageCreate", async (message) => {
     if (message.author.bot) return false;
-    if (message.channel.type !== "DM") return false;
 
-    // list commands
     if (message.content == "/commands") {
-      let commands = "/enroll-price - Current price of enrollment\n"
+      let commands = "*** DM Commands ***\n"
+      commands += "/enroll-price - Current price of enrollment\n"
       commands += "/status - Current membership status\n"
       commands += "/get-referrer - User's referrer\n"
       commands += "/get-referrals - View status of current and recent referrals and bounties\n"
       commands += "/get-wallet - Users's associated wallet\n"
       commands += "/set-wallet <PUB_KEY> - Associate user's wallet public key\n"
       commands += "/enroll-transaction <TRX_ID> - Verify membership payment to degenbible.sol with payment transaction id & gain membership\n"
+      commands += "/list-floor-trackers - List all your current active floor trackers\n"
+      commands += "/delete-floor-tracker <TRACKER_NUM> - Delete floor tracker by number in floor tracker list\n\n"
+
+      commands += "*** Channel Commands ***\n"
+      commands += "/notify-floor-above <FLOOR_PRICE> - Send in the channel of the collection you want a DM alert when the floor price is ABOVE a certain number\n"
+      commands += "/notify-floor-below <FLOOR_PRICE> - Send in the channel of the collection you want a DM alert when the floor price is BELOW a certain number\n"
 
       await message.reply({ content: commands, ephemeral: true })
       return false
+    }
+
+    if (message.channel.type !== "DM") {
+      const collMap = FindGlobalCollMapByChannel(message.channel.id)
+      if (!collMap) return false;
+
+      if (message.content.startsWith("/notify-floor-")) {
+        const discordId = message.author.id
+        const user = await getUserByDiscord(discordId, discordHandleErr)
+        if ( !user ) {
+          await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
+          return false
+        }
+        if ( !user.isOG && !user.isEnrolled && (user.inactiveDate && Moment(user.inactiveDate).isBefore(Moment()))) {
+          await message.reply({ content: "Floor tracker only available for members and OG.", ephemeral: true })
+          return false
+        }
+
+        let trackType
+        const splitMsg = message.content.split(" ")
+        if (splitMsg.length === 2) {
+          trackType = splitMsg[0].split("-")[2]
+        }
+        if ( splitMsg.length !== 2 || isNaN(parseFloat(splitMsg[1])) || !["above", "below"].includes( trackType )) {
+          await message.reply({
+            content: "Invalid command",
+            ephemeral: true,
+          });
+          return false
+        }
+        const isAbove = trackType == "above"
+        const floor = parseFloat(splitMsg[1])
+        const tracker = await createFloorTracker({
+          userId: user.id,
+          discordId: user.discordId,
+          collection: collMap.collection,
+          isAbove,
+          floor,
+        })
+        if (tracker) {
+          await message.reply({
+            content: `Alert set for: ${collMap.collection} floor ${trackType} ${floor}`,
+            ephemeral: true,
+          })
+        }
+      }
+
+      return false;
     }
 
     // get enroll price
@@ -395,6 +452,72 @@ export const StartListener = async (listener) => {
           ephemeral: true,
         });
       }
+    }
+
+    // get floor trackers
+    if (message.content == "/list-floor-trackers") {
+      const discordId = message.author.id
+
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( !user ) {
+        await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
+        return false
+      }
+      if ( !user.isOG && !user.isEnrolled ) {
+        await message.reply({ content: "Floor tracking only available to members and OG.", ephemeral: true })
+        return false
+      }
+
+      const trackers = await getUserFloorTrackers(discordId, discordHandleErr)
+      if ( trackers ) {
+        let content = trackers.map( (tracker,i) => `${i+1}) ${tracker.collection} floor ${tracker.isAbove ? "above" : "below"} ${tracker.floor} SOL` ).join("\n")
+        if ( !content ) content = "None"
+        await message.reply({ content, ephemeral: true })
+      }
+
+      return false
+    }
+
+    // delete floor tracker
+    if (message.content.startsWith("/delete-floor-tracker ")) {
+      const discordId = message.author.id
+
+      const idx = parseFloat(message.content.split(" ")[1])
+      if (isNaN(idx)) {
+        await message.reply({ content: "Invalid command", ephemeral: true })
+        return false
+      }
+
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( !user ) {
+        await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
+        return false
+      }
+      if ( !user.isOG && !user.isEnrolled ) {
+        await message.reply({ content: "Floor tracking only available to members and OG.", ephemeral: true })
+        return false
+      }
+
+      const trackers = await getUserFloorTrackers(discordId, discordHandleErr)
+      if ( trackers ) {
+        if (idx > trackers.length) {
+          await message.reply({ content: "Invalid tracker number", ephemeral: true })
+          return false
+        }
+        const tracker = trackers[idx-1]
+        const success = await deleteFloorTrackers(
+          [tracker.id],
+          async (errMsg) => await message.reply({ content: errMsg, ephemeral: true }),
+        )
+        if ( success ) {
+          await message.reply({
+            content: `* ${ tracker.collection } ${ tracker.isAbove ? "Above" : "Below" } Floor Tracker * has been deleted`,
+            ephemeral: true,
+          })
+        }
+      }
+
+      return false
     }
   });
 

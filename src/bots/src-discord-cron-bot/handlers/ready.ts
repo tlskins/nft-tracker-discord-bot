@@ -7,6 +7,8 @@ import {
   Rule,
   ICollectionMapping,
   UpdateCollectionTracker,
+  CollectionTrackerResp,
+  CollectionTrackerData,
 } from "../../../types";
 import {
   buildMarketEmbed,
@@ -22,6 +24,7 @@ import {
   toTokenAlertMsg,
 } from "./presenters";
 import {
+  deleteFloorTrackers,
   getCollectionMappings,
   getMarketListings,
   getTokenAlerts,
@@ -177,14 +180,14 @@ class CronBot {
     const webhook = await this._getWebhook(channelId);
 
     // get data
-    const tracker = await getMarketListings(
+    const marketResp = await getMarketListings(
       apiPath,
       this.sendErrMsg(apiPath + "-err")
     );
-    if (!tracker) {
+    if (!marketResp) {
       return;
     }
-
+    const { tracker, floorTrackers } = marketResp as CollectionTrackerData;
     const { currentBest, currentFloor, marketSummary } = tracker;
     const { isPump } = marketSummary;
 
@@ -306,6 +309,20 @@ class CronBot {
     }
 
     tracker.apiColl = apiPath;
+
+    // send floor tracker alerts
+    (floorTrackers || []).forEach(async (tracker) => {
+      const trackType = tracker.isAbove ? "above" : "below";
+      const currFloor = currentFloor.marketFloor?.toFixed(2);
+      const floorMsg = `* Floor Alert * ${tracker.collection} current floor ${currFloor} SOL ${trackType} ${tracker.floor}`;
+      await this.sendDm(tracker.discordId, floorMsg);
+      console.log(`Alerted ${tracker.discordId}: ${floorMsg}`);
+      deleteFloorTrackers(
+        [tracker.id],
+        this.sendErrMsg(apiPath + "-update-err")
+      );
+    });
+
     return tracker;
   }
 

@@ -29,3 +29,15 @@ export const FindGlobalCollMapByPin = (
 
   return undefined;
 };
+
+export const FindGlobalCollMapByChannel = (
+  channelId: string
+): ICollectionMapping | undefined => {
+  for (const collMap of collMaps.values()) {
+    if (collMap.channelId === channelId) {
+      return collMap;
+    }
+  }
+
+  return undefined;
+};

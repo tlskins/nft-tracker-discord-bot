@@ -27,6 +27,7 @@ export interface CollectionTrackerResp {
 
 export interface CollectionTrackerData {
   tracker: CollectionTracker;
+  floorTrackers: IFloorTracker[];
 }
 
 export interface CollectionTracker {
@@ -361,4 +362,30 @@ export interface IEnrollment {
   time: string;
   currentCount: number;
   defaultBounty: number;
+}
+
+export interface IFloorTrackerResp {
+  data: IFloorTrackerData;
+}
+
+export interface IFloorTrackerData {
+  tracker: IFloorTracker;
+}
+
+export interface IFloorTrackersResp {
+  data: IFloorTrackersData;
+}
+
+export interface IFloorTrackersData {
+  trackers: IFloorTracker[];
+}
+
+export interface IFloorTracker {
+  id: string;
+  updatedAt: string;
+  userId: string;
+  discordId: string;
+  collection: string;
+  isAbove: boolean;
+  floor: number;
 }
