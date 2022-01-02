@@ -435,7 +435,9 @@ export const shouldBroadcast = (
 export const shouldBroadcastErr = (
   lastBroadCast: Moment.Moment | undefined
 ): boolean => {
-  if (!!lastBroadCast && lastBroadCast.isAfter(Moment().add(-59, "minutes"))) {
+  const start = Moment().add(-59, "minutes");
+  const end = Moment().add(-7, "minutes");
+  if (!!lastBroadCast && lastBroadCast.isBetween(start, end)) {
     return false;
   }
   return true;

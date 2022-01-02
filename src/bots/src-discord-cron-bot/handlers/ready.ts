@@ -7,7 +7,6 @@ import {
   Rule,
   ICollectionMapping,
   UpdateCollectionTracker,
-  CollectionTrackerResp,
   CollectionTrackerData,
 } from "../../../types";
 import {
@@ -16,7 +15,6 @@ import {
   buildBestEmbed,
   shouldBroadcast,
   shouldBroadcastErr,
-  buildAllMarketsEmbed,
   buildFloorTitle,
   buildFloorEmbed,
   buildPumpTitle,
@@ -44,6 +42,7 @@ class CronBot {
   client: Client;
   rule: Rule;
   broadcasts: Map<string, Moment.Moment>;
+  errCounts: Map<string, number>;
   lastOvrBest: CollectionTracker | undefined;
   lastTokenAlert: Moment.Moment | undefined;
 
@@ -51,6 +50,7 @@ class CronBot {
     this.client = client;
     this.rule = rule;
     this.broadcasts = new Map();
+    this.errCounts = new Map();
     this.setCollectionMappings();
   }
 
@@ -97,13 +97,14 @@ class CronBot {
 
   sendErrMsg = (castKey: string) => async (message: string) => {
     const lastErrCast = this.broadcasts.get(castKey);
+    const lastErr = lastErrCast ? `Last Err: ${lastErrCast.format()} - ` : "";
     console.error(
       `sending err "${message}" - Last Cast: ${
         lastErrCast?.format() || "never"
       }`
     );
     if (shouldBroadcastErr(lastErrCast)) {
-      this.postTrackerErr(message);
+      this.postTrackerErr(`${lastErr}${message}`);
       this.broadcasts.set(castKey, Moment());
     }
   };
@@ -256,7 +257,7 @@ class CronBot {
     if (shouldBroadcast(lastBroadcastAt)) {
       const mktEmbed = buildMarketEmbed(tracker);
       const mktMsg = {
-        content: "Market Summary",
+        content: "Collection Metrics Snapshot",
         username: "Degen Bible Bot",
         embeds: [mktEmbed],
       };
@@ -331,15 +332,15 @@ class CronBot {
     const batch = min % 5;
     const promiseArr = [] as Promise<CollectionTracker | undefined>[];
     let idx = 0;
+    console.log(
+      `*** Processing batch ${batch} with size ${promiseArr.length}...`
+    );
     GetGlobalCollMaps().forEach((collMap) => {
       if (idx % 5 === batch) {
         promiseArr.push(this.handleMessage(collMap));
       }
       idx++;
     });
-    console.log(
-      `*** Processing batch ${batch} with size ${promiseArr.length}...`
-    );
     Promise.all(promiseArr);
   }
 
