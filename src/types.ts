@@ -389,3 +389,29 @@ export interface IFloorTracker {
   isAbove: boolean;
   floor: number;
 }
+
+// metaplex
+
+export interface IMetadata {
+  key: number;
+  updateAuthority: string;
+  mint: string;
+  primarySaleHappened: boolean;
+  isMutable: boolean;
+  editionNonce: number | null;
+  data: IMetaplexData;
+}
+
+export interface IMetaplexData {
+  name: string;
+  symbol: string;
+  uri: string;
+  sellerFeeBasisPoints: number;
+  creators: IMetaplexCreator[] | null;
+}
+
+export interface IMetaplexCreator {
+  address: string;
+  verified: boolean;
+  share: number;
+}

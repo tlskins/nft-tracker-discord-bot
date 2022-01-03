@@ -2,6 +2,11 @@ import "dotenv/config";
 import Moment from "moment";
 const { Client, Intents } = require("discord.js");
 
+// test solana
+import * as web3 from "@solana/web3.js";
+import * as metadata from "./solana/metaplex";
+import * as solana from "./solana/coordinators"
+
 import {
   updateCollMap,
   updateUser,
@@ -13,7 +18,7 @@ import {
   getUserFloorTrackers,
   deleteFloorTrackers,
 } from "./api";
-import { checkBalChange, getSolTransaction } from "./solana";
+import { checkBalChange, getSolTransaction } from "./solana/coordinators";
 import {
   FindGlobalCollMapByPin,
   GetGlobalCollMap,
@@ -93,6 +98,16 @@ export const StartListener = async (listener) => {
       console.log('Updating channel bounty fee...')
       channBounty.setName(bountyTxt)
     }
+
+
+    // test solana
+    (async () => {
+      const account = await solana.getSolAccount("83Ups5qviXSPRXMYbWHgUfmE7FEv8EYYVqg32PW14xDf")
+      console.log(account)
+
+      const metadata = await solana.getSolMetadata("7yYzWkNLD5SZGHHsrvZHZ9EPPmQ89YRLA7pj6K1gY5fC")
+      console.log(metadata)
+    })();
   });
 
   // update invite cache when new ones created
