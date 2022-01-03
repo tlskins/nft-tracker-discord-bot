@@ -168,6 +168,12 @@ export const buildBestEmbed = (tracker: CollectionTracker): MessageEmbed => {
   return embed;
 };
 
+const timeDiffStr = (ttlMins: number): string => {
+  const hrs = Math.floor(ttlMins / 60.0);
+  const mins = ttlMins % 60;
+  return `${hrs ? `${hrs}hrs` : ""}${mins}mins`;
+};
+
 export const buildPumpTitle = (
   tracker: CollectionTracker,
   mapping: ICollectionMapping,
@@ -192,7 +198,7 @@ export const buildPumpTitle = (
         count += 1;
       }
     });
-    soldDesc = ` - ${count} sold in last ${minutes} mins`;
+    soldDesc = ` - ${count} sold in last 15 ${timeDiffStr(minutes)}`;
   }
 
   const currFloor = tracker.currentFloor.price;
@@ -270,13 +276,12 @@ export const buildMarketEmbedFields = (
       name: `Floor History (${floorHistorySlope > 0 ? "📉" : "📈"})`,
       value:
         floorHistory
-          .map(
-            (hist) =>
-              `${hist.floor.toFixed(2)}@${now.diff(
-                Moment(hist.time),
-                "minutes"
-              )}mins`
-          )
+          .map((hist) => {
+            const floor = hist.floor.toFixed(2);
+            const timeDiff = now.diff(Moment(hist.time), "minutes");
+
+            return `${floor}@${timeDiffStr(timeDiff)}`;
+          })
           .join(" | ") || "None",
       inline: true,
     },
@@ -285,9 +290,11 @@ export const buildMarketEmbedFields = (
       value:
         saleCounts
           .slice(0, 5)
-          .map(
-            (cnt) => `${cnt.count}@${now.diff(Moment(cnt.time), "minutes")}mins`
-          )
+          .map((cnt) => {
+            const timeDiff = now.diff(Moment(cnt.time), "minutes");
+
+            return `${cnt.count}@${timeDiffStr(timeDiff)}`;
+          })
           .join(" | ") || "None",
       inline: true,
     },
@@ -298,10 +305,10 @@ export const buildMarketEmbedFields = (
       value:
         listingCounts
           .filter((_, i) => i % 2 === 0)
-          .map(
-            (cnt) =>
-              `${cnt.count}@${Moment().diff(Moment(cnt.time), "minutes")}mins`
-          )
+          .map((cnt) => {
+            const timeDiff = now.diff(Moment(cnt.time), "minutes");
+            return `${cnt.count}@${timeDiffStr(timeDiff)}`;
+          })
           .join(" | ") || "None",
       inline: true,
     },
