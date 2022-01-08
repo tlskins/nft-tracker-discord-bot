@@ -344,6 +344,7 @@ export interface ICollectionMapping {
   pumpRole: string;
   totalSupply: number;
   updateAuthority: string;
+  runAllCyclesEnd: string;
 }
 
 export interface IEnrollmentResp {

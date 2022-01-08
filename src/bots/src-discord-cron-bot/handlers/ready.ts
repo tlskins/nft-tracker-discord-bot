@@ -321,8 +321,12 @@ class CronBot {
     console.log(
       `*** Processing batch ${batch} with size ${promiseArr.length}...`
     );
+    const now = Moment();
     GetGlobalCollMaps().forEach((collMap) => {
-      if (idx % 5 === batch) {
+      const isRunAll =
+        collMap.runAllCyclesEnd &&
+        now.isBefore(Moment(collMap.runAllCyclesEnd));
+      if (idx % 5 === batch || isRunAll) {
         promiseArr.push(this.handleMessage(collMap));
       }
       idx++;
