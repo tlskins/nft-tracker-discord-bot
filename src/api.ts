@@ -13,6 +13,7 @@ import {
   IDiscordUpdateUser,
   IUser,
   IUserResp,
+  IUsersResp,
   IReferralsResp,
   IReferrals,
   IEnrollmentResp,
@@ -20,6 +21,8 @@ import {
   IFloorTrackersResp,
   IFloorTrackerResp,
   IFloorTracker,
+  IMagicEdenSalesResp,
+  IMagicEdenSale,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 import axios, { AxiosError } from "axios";
@@ -186,6 +189,51 @@ export const getUserByDiscord = async (
     if (axios.isAxiosError(e)) {
       const serverErr = e as AxiosError<ServerError>;
       const errMsg = `Error finding user: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+    return undefined;
+  }
+};
+
+export const getUsersTrackingMESales = async (
+  handleErr: (msg: string) => Promise<void>
+): Promise<IUser[] | undefined> => {
+  console.log(`Getting users tracking ME sales...`);
+  try {
+    const resp: IUsersResp = await rest.get(`/magic-eden/sales-tracking/users`);
+
+    return resp.data.users;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `Error getting users tracking ME sales: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+    return undefined;
+  }
+};
+
+export const getMagicEdenSales = async (
+  address: string,
+  handleErr: (msg: string) => Promise<void>
+): Promise<IMagicEdenSale[] | undefined> => {
+  console.log(`Getting users ME sales...`);
+  try {
+    const resp: IMagicEdenSalesResp = await rest.get(
+      `/magic-eden/sales/${address}`
+    );
+
+    return resp.data.sales;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `Error getting users ME sales: ${serverErr.response?.data?.message}`;
       console.error(errMsg);
       handleErr(errMsg);
     } else {

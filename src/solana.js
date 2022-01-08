@@ -1,6 +1,6 @@
 const web3 = require('@solana/web3.js');
 
-const lampsInSol = 1000000000.0
+export const lampsInSol = 1000000000.0
 
 export const getSolTransaction = async (trxAddr) => {
     console.log(`Getting solana transaction ${trxAddr}`)

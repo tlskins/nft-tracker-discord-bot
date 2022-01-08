@@ -1,6 +1,7 @@
 import { CronJob } from "cron";
 import Moment from "moment";
 import { Client, Snowflake, TextChannel, Webhook, Message } from "discord.js";
+import { lampsInSol } from "../../../solana";
 import {
   Config,
   CollectionTracker,
@@ -8,6 +9,8 @@ import {
   ICollectionMapping,
   UpdateCollectionTracker,
   CollectionTrackerData,
+  IUser,
+  IMagicEdenActivity,
 } from "../../../types";
 import {
   buildMarketEmbed,
@@ -22,6 +25,7 @@ import {
 } from "./presenters";
 import {
   deleteFloorTrackers,
+  getUsersTrackingMESales,
   getCollectionMappings,
   getMarketListings,
   getTokenAlerts,
@@ -29,6 +33,7 @@ import {
   syncSubscriptions,
   updateTracker,
   updateCollMap,
+  getMagicEdenSales,
 } from "../../../api";
 import {
   GetGlobalCollMaps,
@@ -41,38 +46,33 @@ class CronBot {
   client: Client;
   rule: Rule;
   broadcasts: Map<string, Moment.Moment>;
+  usersActivity: Map<string, Moment.Moment | undefined>;
   errCounts: Map<string, number>;
   lastOvrBest: CollectionTracker | undefined;
   lastTokenAlert: Moment.Moment | undefined;
+  usersTrackingMESales: IUser[];
 
   constructor(client: Client, rule: Rule) {
     this.client = client;
     this.rule = rule;
     this.broadcasts = new Map();
+    this.usersActivity = new Map();
     this.errCounts = new Map();
+    this.usersTrackingMESales = [];
     this.setCollectionMappings();
+    this.setUsersTrackingMESales();
   }
 
   async handleBot(): Promise<Promise<void>> {
     this.sendMessages();
     const min = Moment().minute();
-    // run every 30 minutes
     if (min % 30 === 0) {
       syncSubscriptions(this.sendErrMsg("sync-subs-err"));
       // this.checkTokenAlerts(); // disable token trackers for now
     }
-
-    // seed all pump text
-    // const webhook = await this._getWebhook(
-    //   process.env.CHANNEL_ALL_PUMPS as string
-    // );
-    // const pinMsgId = process.env.MARKETS_PIN_ID as string;
-    // await webhook.editMessage(pinMsgId, {
-    //   content:
-    //     "React with a ⏰ to this message to subscribe to All Pump events",
-    //   embeds: [],
-    // });
-    // console.log("seeded all pumps...");
+    if (min % 15 === 0) {
+      this.syncMEWalletActivity();
+    }
   }
 
   async sendDm(userId: string, message: string) {
@@ -110,6 +110,17 @@ class CronBot {
 
   // controllers
 
+  async setUsersTrackingMESales(): Promise<void> {
+    const users = await getUsersTrackingMESales(
+      this.sendErrMsg("usersTrackingMESales")
+    );
+    console.log(`found ${users?.length || 0} users tracking ME sales...`);
+    if (users) {
+      this.usersTrackingMESales = users;
+    }
+    this.syncMEWalletActivity();
+  }
+
   async setCollectionMappings(): Promise<void> {
     const collMaps = await getCollectionMappings(
       this.sendErrMsg("setCollMaps")
@@ -119,6 +130,51 @@ class CronBot {
       console.log(`${collMaps.size} Collection Mappings set.`);
     } else {
       throw Error("Unable to load collection mappings");
+    }
+  }
+
+  async syncMEWalletActivity(): Promise<void> {
+    console.log("syncing wallet activity...");
+    for (let i = 0; i < this.usersTrackingMESales.length; i++) {
+      const user = this.usersTrackingMESales[i];
+      console.log(`syncing wallet activity for ${user.discordName}...`);
+      const sales = await getMagicEdenSales(
+        user.walletPublicKey,
+        this.sendErrMsg("get-me-activity")
+      );
+      const currActivity = {
+        lastCheck: Moment().format(),
+        user,
+        sales: sales || [],
+      };
+      console.log(
+        `${user.discordName} last sale at ${
+          currActivity.sales[0]?.createdAt || "None"
+        }...`
+      );
+
+      const lastActivity = this.usersActivity.get(user.id);
+      if (lastActivity) {
+        const newSales = currActivity.sales.filter((sale) => {
+          return Moment(sale.createdAt).isAfter(lastActivity);
+        });
+        console.log(`${newSales.length} new sales found `);
+        if (newSales.length > 0) {
+          await this.sendDm(
+            user.discordId,
+            `* New Magic Eden Sale * ${newSales.map(
+              (sale) =>
+                `${sale.collection_symbol
+                  .replaceAll("_", " ")
+                  .toLowerCase()} @ ${
+                  sale.parsedTransaction.seller_fee_amount / lampsInSol
+                }`
+            )}`
+          );
+        }
+      }
+
+      this.usersActivity.set(user.id, Moment());
     }
   }
 

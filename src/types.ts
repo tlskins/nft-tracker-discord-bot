@@ -1,4 +1,5 @@
 import { EmojiResolvable, Snowflake, WebhookMessageOptions } from "discord.js";
+import internal from "stream";
 
 // Cron Types
 export interface Config {
@@ -236,8 +237,16 @@ export interface IUserResp {
   data: IUserData;
 }
 
+export interface IUsersResp {
+  data: IUsersData;
+}
+
 export interface IUserData {
   user: IUser;
+}
+
+export interface IUsersData {
+  users: IUser[];
 }
 
 export interface IUser {
@@ -389,4 +398,49 @@ export interface IFloorTracker {
   collection: string;
   isAbove: boolean;
   floor: number;
+}
+
+// Magic eden
+
+export interface IMagicEdenSalesResp {
+  data: IMagicEdenSalesData;
+}
+
+export interface IMagicEdenSalesData {
+  sales: IMagicEdenSale[];
+}
+
+export interface IMagicEdenActivity {
+  lastCheck: string;
+  user: IUser;
+  sales: IMagicEdenSale[];
+}
+
+export interface IMagicEdenSale {
+  createdAt: string;
+  blockTime: number;
+  slot: number;
+  source: string;
+  collection_symbol: string;
+  mint: string;
+  buyer_address: string;
+  seller_address: string;
+  transaction_id: string;
+  txType: string;
+  parsedTransaction: IParsedTransaction;
+}
+
+export interface IParsedTransaction {
+  blocktime: string;
+  buyer_address: string;
+  collection_symbol: string;
+  creator_fees_amount: string;
+  mint: string;
+  platform_fees_amount: number;
+  seller_address: string;
+  seller_fee_amount: number;
+  slot: number;
+  total_amount: number;
+  transaction_id: string;
+  TxType: string;
 }
