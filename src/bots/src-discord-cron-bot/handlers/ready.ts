@@ -13,7 +13,6 @@ import {
   buildMarketEmbed,
   buildBestTitle,
   buildBestEmbed,
-  shouldBroadcast,
   shouldBroadcastErr,
   buildFloorTitle,
   buildFloorEmbed,
@@ -235,56 +234,48 @@ class CronBot {
       });
     }
 
-    const lastBroadcastAt = tracker.lastBroadcastAt
-      ? Moment(tracker.lastBroadcastAt)
-      : undefined;
-
     // send / update pinned msg
-    if (shouldBroadcast(lastBroadcastAt)) {
-      const mktEmbed = buildMarketEmbed(tracker);
-      const mktMsg = {
-        content: "Collection Metrics Snapshot",
+    const mktEmbed = buildMarketEmbed(tracker);
+    const mktMsg = {
+      content: "Collection Metrics Snapshot",
+      username: "Degen Bible Bot",
+      embeds: [mktEmbed],
+    };
+
+    const trackerUpds = { id: tracker.id } as UpdateCollectionTracker;
+    const pinMsgId = collMap.pinMsgId;
+    if (pinMsgId) {
+      console.log(`updating ${apiPath} pinid ${pinMsgId}...`);
+      await webhook.editMessage(pinMsgId, mktMsg);
+
+      // temp add new role emojis
+      // const msg: Message = (await webhook.fetchMessage(pinMsgId)) as Message;
+      // msg.react("🃏");
+    } else {
+      console.log(`new pin for ${apiPath}...`);
+      const sentMsg = await webhook.send(mktMsg);
+      const msg: Message = (await webhook.fetchMessage(sentMsg.id)) as Message;
+      await msg.pin();
+      msg.react("🧹");
+      msg.react("📊");
+      msg.react("⏰");
+      // msg.react("🃏");
+
+      // update pinned msg id
+      const updCollMap = await updateCollMap(
+        id,
+        { id, pinMsgId: msg.id },
+        this.sendErrMsg(apiPath + "-update-err")
+      );
+      if (updCollMap) UpdateGlobalCollMap(updCollMap);
+
+      // broadcast to new collections channel
+      const newCollChann = process.env.CHANNEL_NEW_COLLS as string;
+      const newCollWebhook = await this._getWebhook(newCollChann);
+      await newCollWebhook.send({
+        content: `* ${updCollMap?.collection} - Added *`,
         username: "Degen Bible Bot",
-        embeds: [mktEmbed],
-      };
-
-      const trackerUpds = { id: tracker.id } as UpdateCollectionTracker;
-      const pinMsgId = collMap.pinMsgId;
-      if (pinMsgId) {
-        console.log(`updating ${apiPath} pinid ${pinMsgId}...`);
-        await webhook.editMessage(pinMsgId, mktMsg);
-
-        // temp add new role emojis
-        // const msg: Message = (await webhook.fetchMessage(pinMsgId)) as Message;
-        // msg.react("🃏");
-      } else {
-        console.log(`new pin for ${apiPath}...`);
-        const sentMsg = await webhook.send(mktMsg);
-        const msg: Message = (await webhook.fetchMessage(
-          sentMsg.id
-        )) as Message;
-        await msg.pin();
-        msg.react("🧹");
-        msg.react("📊");
-        msg.react("⏰");
-        // msg.react("🃏");
-
-        // update pinned msg id
-        const updCollMap = await updateCollMap(
-          id,
-          { id, pinMsgId: msg.id },
-          this.sendErrMsg(apiPath + "-update-err")
-        );
-        if (updCollMap) UpdateGlobalCollMap(updCollMap);
-
-        // broadcast to new collections channel
-        const newCollChann = process.env.CHANNEL_NEW_COLLS as string;
-        const newCollWebhook = await this._getWebhook(newCollChann);
-        await newCollWebhook.send({
-          content: `* ${updCollMap?.collection} - Added *`,
-          username: "Degen Bible Bot",
-        });
-      }
+      });
 
       // update last broadcast at
       trackerUpds.lastBroadcastAt = Moment().format();
@@ -318,9 +309,6 @@ class CronBot {
     const batch = min % 5;
     const promiseArr = [] as Promise<CollectionTracker | undefined>[];
     let idx = 0;
-    console.log(
-      `*** Processing batch ${batch} with size ${promiseArr.length}...`
-    );
     const now = Moment();
     GetGlobalCollMaps().forEach((collMap) => {
       const isRunAll =
@@ -331,6 +319,9 @@ class CronBot {
       }
       idx++;
     });
+    console.log(
+      `*** Processing batch ${batch} with size ${promiseArr.length}...`
+    );
     Promise.all(promiseArr);
   }
 

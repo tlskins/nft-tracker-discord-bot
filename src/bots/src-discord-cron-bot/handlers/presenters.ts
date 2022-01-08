@@ -430,15 +430,6 @@ export const buildAllMarketsEmbed = (
   return embed;
 };
 
-export const shouldBroadcast = (
-  lastBroadCast: Moment.Moment | undefined
-): boolean => {
-  if (!!lastBroadCast && lastBroadCast.isAfter(Moment().add(-4, "minutes"))) {
-    return false;
-  }
-  return true;
-};
-
 export const shouldBroadcastErr = (
   lastBroadCast: Moment.Moment | undefined
 ): boolean => {
