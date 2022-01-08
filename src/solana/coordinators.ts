@@ -1,86 +1,60 @@
-import * as web3 from "@solana/web3.js";
-import * as metadata from "./metaplex";
+import { IMetadata, IWallet, IWalletUpsert } from "../types";
+import { getSolAccountMintIds } from "./accounts";
+import { getSolMetadata } from "./metaplex";
+import { getMetadatas, upsertMetadatas, upsertWallet } from "../api";
+import Moment from "moment";
 
-import { IMetadata } from "../types";
+export const getWallets = async (
+  userId: string,
+  addrs: string[],
+  handleErr: (msg: string) => Promise<void>
+): Promise<IWallet[] | undefined> => {
+  const wallets = [] as IWallet[];
+  for (let i = 0; i < addrs.length; i++) {
+    const addr = addrs[0];
+    const mintIds = await getSolAccountMintIds(addr);
+    console.log(`Got ${mintIds.length} nfts in your wallet...`);
+    // check store first for metadata
+    const metadatas = await getMetadatas(mintIds, handleErr);
+    if (!metadatas) return;
+    const metaMap = metadatas.reduce((map, metadata) => {
+      map.set(metadata.mint, metadata);
+      return map;
+    }, new Map<string, IMetadata>());
 
-const lampsInSol = 1000000000.0;
-
-export const getSolTransaction = async (
-  trxAddr: string
-): Promise<web3.TransactionResponse | null> => {
-  console.log(`Getting solana transaction ${trxAddr}`);
-
-  const connection = new web3.Connection(
-    web3.clusterApiUrl("mainnet-beta"),
-    "confirmed"
-  );
-  const transaction = await connection.getTransaction(trxAddr, {
-    commitment: "finalized",
-  });
-  return transaction;
-};
-
-export const checkBalChange = async (
-  trx: web3.TransactionResponse,
-  walletAddr: string
-): Promise<number> => {
-  let walletChg = 0.0;
-
-  trx.transaction.message.accountKeys.forEach((accountKey, acctIdx) => {
-    const account = accountKey.toString();
-    if (account === walletAddr) {
-      const preBal = trx?.meta?.preBalances[acctIdx] || 0.0;
-      const postBal = trx?.meta?.postBalances[acctIdx] || 0.0;
-      console.log(
-        `${account} ${preBal / lampsInSol} -> ${postBal / lampsInSol}`
-      );
-      walletChg += postBal - preBal;
+    // any missing meta get from solana rpc
+    const missingMetadats = [] as IMetadata[];
+    const missingIds = mintIds.filter((mintId) => !metaMap.get(mintId));
+    for (let i = 0; i < missingIds.length; i++) {
+      const mintId = missingIds[i];
+      const metadata = await getSolMetadata(mintId);
+      if (metadata) {
+        missingMetadats.push(metadata);
+        metaMap.set(mintId, metadata);
+      }
     }
-  });
+    console.log(`Got ${missingMetadats.length} missing nfts...`);
 
-  const walletChgSol = walletChg / lampsInSol;
-  console.log(`${walletAddr} walletChg: ${walletChgSol}`);
+    // upsert to store any newly found metadata
+    if (missingMetadats.length > 0) {
+      const success = await upsertMetadatas(missingMetadats, handleErr);
+      if (!success) return;
+    }
 
-  return walletChgSol;
-};
+    const upsert = {
+      id: addr,
+      lastSynced: Moment().format(),
+      publicKey: addr,
+      userId,
+      metadata: [...metadatas, ...missingMetadats],
+    } as IWalletUpsert;
+    const wallet = await upsertWallet(upsert, handleErr);
+    if (wallet) wallets.push(wallet);
+  }
 
-const TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+  console.log(`Got ${wallets.length} wallets...`);
 
-export const getSolAccount = async (acctAddr: string): Promise<string[]> => {
-  const connection = new web3.Connection(
-    web3.clusterApiUrl("mainnet-beta"),
-    "confirmed"
-  );
-  const data = await connection.getParsedTokenAccountsByOwner(
-    new web3.PublicKey(acctAddr),
-    { programId: new web3.PublicKey(TOKEN_PROGRAM_ID) }
-  );
+  console.log(wallets);
 
-  return data.value
-    .filter(
-      (v) =>
-        v.account.data.parsed.info.tokenAmount.amount === "1" &&
-        v.account.data.parsed.info.tokenAmount.uiAmount === 1
-    )
-    .map((v) => v.account.data.parsed.info.mint);
-};
-
-export const getSolMetadata = async (
-  tokenAddr: string
-): Promise<IMetadata | undefined> => {
-  // Connect to cluster
-  const connection = new web3.Connection(
-    web3.clusterApiUrl("mainnet-beta"),
-    "confirmed"
-  );
-
-  // get metadata account that holds the metadata information
-  const m = await metadata.getMetadataAccount(tokenAddr);
-
-  // get the account info for that account
-  const accInfo = await connection.getAccountInfo(new web3.PublicKey(m));
-
-  // finally, decode metadata
-  if (!accInfo) return;
-  return metadata.decodeMetadata(accInfo.data).serialize();
+  return wallets;
 };

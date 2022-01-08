@@ -20,6 +20,11 @@ import {
   IFloorTrackersResp,
   IFloorTrackerResp,
   IFloorTracker,
+  IMetadata,
+  IMetadataResp,
+  IWalletUpsert,
+  IWallet,
+  IWalletResp,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 import axios, { AxiosError } from "axios";
@@ -360,6 +365,71 @@ export const getUserFloorTrackers = async (
     if (axios.isAxiosError(e)) {
       const serverErr = e as AxiosError<ServerError>;
       const errMsg = `error getting user floor trackers: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+  }
+};
+
+export const getMetadatas = async (
+  ids: string[],
+  handleErr: (msg: string) => Promise<void>
+): Promise<IMetadata[] | undefined> => {
+  try {
+    const resp = (await rest.get(
+      `/metadata/${ids.join(",")}`
+    )) as IMetadataResp;
+
+    return resp.data.metadata;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error getting metadata: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+  }
+};
+
+export const upsertMetadatas = async (
+  metadata: IMetadata[],
+  handleErr: (msg: string) => Promise<void>
+): Promise<boolean> => {
+  try {
+    await rest.post(`/metadata`, { metadata });
+
+    return true;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error upserting metadata: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+    return false;
+  }
+};
+
+// wallets
+
+export const upsertWallet = async (
+  upsert: IWalletUpsert,
+  handleErr: (msg: string) => Promise<void>
+): Promise<IWallet | undefined> => {
+  try {
+    const resp = (await rest.post(`/wallet`, upsert)) as IWalletResp;
+
+    return resp.data.wallet;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error upserting wallet: ${serverErr.response?.data?.message}`;
       console.error(errMsg);
       handleErr(errMsg);
     } else {

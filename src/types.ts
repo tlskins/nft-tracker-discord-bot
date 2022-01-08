@@ -392,12 +392,20 @@ export interface IFloorTracker {
 
 // metaplex
 
+export interface IMetadataResp {
+  data: IMetadataData;
+}
+
+export interface IMetadataData {
+  metadata: IMetadata[];
+}
+
 export interface IMetadata {
   key: number;
   updateAuthority: string;
   mint: string;
-  primarySaleHappened: boolean;
-  isMutable: boolean;
+  primarySaleHappened: number;
+  isMutable: number;
   editionNonce: number | null;
   data: IMetaplexData;
 }
@@ -412,6 +420,33 @@ export interface IMetaplexData {
 
 export interface IMetaplexCreator {
   address: string;
-  verified: boolean;
+  verified: number;
   share: number;
+}
+
+// wallet
+export interface IWalletResp {
+  data: IWalletData;
+}
+export interface IWalletData {
+  wallet: IWallet;
+}
+
+export interface IWalletUpsert {
+  id: string;
+  lastSynced: string;
+  publicKey: string;
+  userId: string;
+  metadata: IMetadata[];
+}
+
+export interface IWallet {
+  id: string;
+  lastSynced: string;
+  publicKey: string;
+  userId: string;
+  metadata: IMetadata[];
+  mappings: Map<string, ICollectionMapping[]>;
+  nfts: Map<string, IToken[]>;
+  untracked: Map<string, IMetadata[]>;
 }

@@ -5,9 +5,30 @@
  * trying to reference their stuff, I copied all of the minimum necessary code into this file
  */
 import { deserializeUnchecked } from "borsh";
+import * as web3 from "@solana/web3.js";
 
 import { StringPublicKey, findProgramAddress, toPublicKey } from "./helpers";
 import { IMetadata, IMetaplexCreator } from "../types";
+
+export const getSolMetadata = async (
+  tokenAddr: string
+): Promise<IMetadata | undefined> => {
+  // Connect to cluster
+  const connection = new web3.Connection(
+    web3.clusterApiUrl("mainnet-beta"),
+    "confirmed"
+  );
+
+  // get metadata account that holds the metadata information
+  const m = await getMetadataAccount(tokenAddr);
+
+  // get the account info for that account
+  const accInfo = await connection.getAccountInfo(new web3.PublicKey(m));
+
+  // finally, decode metadata
+  if (!accInfo) return;
+  return decodeMetadata(accInfo.data).serialize();
+};
 
 export const METADATA_PROGRAM_ID =
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s" as StringPublicKey;
@@ -40,7 +61,7 @@ class Creator {
   serialize(): IMetaplexCreator {
     return {
       address: this.address,
-      verified: this.verified,
+      verified: this.verified ? 1 : 0,
       share: this.share,
     };
   }
@@ -102,8 +123,8 @@ class Metadata {
       key: this.key,
       updateAuthority: this.updateAuthority,
       mint: this.mint,
-      primarySaleHappened: this.primarySaleHappened,
-      isMutable: this.isMutable,
+      primarySaleHappened: this.primarySaleHappened ? 1 : 0,
+      isMutable: this.isMutable ? 1 : 0,
       editionNonce: this.editionNonce,
       data: {
         name: this.data.name,
