@@ -286,19 +286,6 @@ export const buildMarketEmbedFields = (
       inline: true,
     },
     {
-      name: `Sales Counts (${saleCountSlope > 0 ? "📉" : "📈"})`,
-      value:
-        saleCounts
-          .slice(0, 5)
-          .map((cnt) => {
-            const timeDiff = now.diff(Moment(cnt.time), "minutes");
-
-            return `${cnt.count}@${timeDiffStr(timeDiff)}`;
-          })
-          .join(" | ") || "None",
-      inline: true,
-    },
-    {
       name: `${netNewLists} Net Listings last 15mins (${
         listingCountSlope > 0 ? "📉" : "📈"
       })`,
@@ -311,6 +298,21 @@ export const buildMarketEmbedFields = (
           })
           .join(" | ") || "None",
       inline: true,
+    },
+    {
+      name: `Sales Counts (${saleCountSlope > 0 ? "📉" : "📈"})`,
+      value:
+        saleCounts
+          .slice(0, 5)
+          .map((cnt) => {
+            const timeDiff = now.diff(Moment(cnt.time), "minutes");
+
+            return `${cnt.count}@${timeDiffStr(timeDiff)}${
+              cnt.avgSale ? ` (AVG ${cnt.avgSale.toFixed(1)})` : ""
+            }`;
+          })
+          .join(" | ") || "None",
+      inline: false,
     },
   ] as EmbedFieldData[];
 };

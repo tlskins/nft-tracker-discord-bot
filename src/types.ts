@@ -106,6 +106,7 @@ export interface MarketSummary {
 export interface ISaleCount {
   time: string;
   count: number;
+  avgSale: number;
 }
 
 export interface IListingCount {
