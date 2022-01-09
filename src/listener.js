@@ -176,6 +176,7 @@ export const StartListener = async (listener) => {
       commands += "/list-floor-trackers - List all your current active floor trackers\n"
       commands += "/delete-floor-tracker <TRACKER_NUM> - Delete floor tracker by number in floor tracker list\n\n"
       commands += "/track-sales - Get a DM whenever a Magic Eden sale is detected in the wallet set by /set-wallet\n\n"
+      commands += "/untrack-sales - Disable Magic Eden sales tracker\n\n"
 
       commands += "*** Channel Commands ***\n"
       commands += "/notify-floor-above <FLOOR_PRICE> - Send in the channel of the collection you want a DM alert when the floor price is ABOVE a certain number\n"
@@ -316,7 +317,33 @@ export const StartListener = async (listener) => {
         }
       )
       if ( updSuccess ) {
-        await message.reply({ content: "Sales tracker active!", ephemeral: true })
+        await message.reply({ content: "Magic Eden sales tracker active!", ephemeral: true })
+      }
+
+      return false
+    }
+
+    // untrack ME sales
+    if (message.content === "/untrack-sales") {
+      const discordId = message.author.id
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( !user ) {
+        await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
+        return false
+      }
+      if ( !user.trackMagicEdenSales ) {
+        await message.reply({ content: "Sales tracker is already deactivated", ephemeral: true })
+        return false
+      }
+
+      const updSuccess = await updateUser(
+        { discordId, update: { trackMagicEdenSales: false }},
+        async (content) => {
+          await message.reply({ content, ephemeral: true });
+        }
+      )
+      if ( updSuccess ) {
+        await message.reply({ content: "Magic Eden sales tracker deactivated!", ephemeral: true })
       }
 
       return false
