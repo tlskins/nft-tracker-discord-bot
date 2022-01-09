@@ -58,6 +58,7 @@ class CronBot {
     this.usersActivity = new Map();
     this.errCounts = new Map();
     this.setCollectionMappings();
+    this.syncMEWalletActivity();
   }
 
   async handleBot(): Promise<Promise<void>> {
