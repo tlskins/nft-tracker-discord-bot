@@ -50,7 +50,6 @@ class CronBot {
   errCounts: Map<string, number>;
   lastOvrBest: CollectionTracker | undefined;
   lastTokenAlert: Moment.Moment | undefined;
-  usersTrackingMESales: IUser[];
 
   constructor(client: Client, rule: Rule) {
     this.client = client;
@@ -58,9 +57,7 @@ class CronBot {
     this.broadcasts = new Map();
     this.usersActivity = new Map();
     this.errCounts = new Map();
-    this.usersTrackingMESales = [];
     this.setCollectionMappings();
-    this.setUsersTrackingMESales();
   }
 
   async handleBot(): Promise<Promise<void>> {
@@ -110,17 +107,6 @@ class CronBot {
 
   // controllers
 
-  async setUsersTrackingMESales(): Promise<void> {
-    const users = await getUsersTrackingMESales(
-      this.sendErrMsg("usersTrackingMESales")
-    );
-    console.log(`found ${users?.length || 0} users tracking ME sales...`);
-    if (users) {
-      this.usersTrackingMESales = users;
-    }
-    this.syncMEWalletActivity();
-  }
-
   async setCollectionMappings(): Promise<void> {
     const collMaps = await getCollectionMappings(
       this.sendErrMsg("setCollMaps")
@@ -135,8 +121,17 @@ class CronBot {
 
   async syncMEWalletActivity(): Promise<void> {
     console.log("syncing wallet activity...");
-    for (let i = 0; i < this.usersTrackingMESales.length; i++) {
-      const user = this.usersTrackingMESales[i];
+
+    // getting users who are tracking ME sales
+    const users = await getUsersTrackingMESales(
+      this.sendErrMsg("getUsersTrackingMESales")
+    );
+    if (!users) return;
+    console.log(`found ${users?.length || 0} users tracking ME sales...`);
+
+    // get current wallet sales
+    for (let i = 0; i < users.length; i++) {
+      const user = users[i];
       console.log(`syncing wallet activity for ${user.discordName}...`);
       const sales = await getMagicEdenSales(
         user.walletPublicKey,
