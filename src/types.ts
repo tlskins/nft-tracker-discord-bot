@@ -265,6 +265,7 @@ export interface IUser {
   trackedWallets: [string];
   hasWalletTracker: boolean;
   walletPublicKey: string;
+  trackMagicEdenSales: boolean;
 
   referrerDiscordId: string;
   inviteId: string;
@@ -287,6 +288,7 @@ export interface IUpdateUser {
   transactionAmount?: number;
   enrolledAt?: string;
 
+  trackMagicEdenSales?: boolean;
   referrerDiscordId?: string;
   inviteId?: string;
   lastJoined?: string;
