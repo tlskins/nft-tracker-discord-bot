@@ -174,8 +174,8 @@ export const StartListener = async (listener) => {
       commands += "/set-wallet <PUB_KEY> - Associate user's wallet public key\n"
       commands += "/enroll-transaction <TRX_ID> - Verify membership payment to degenbible.sol with payment transaction id & gain membership\n"
       commands += "/list-floor-trackers - List all your current active floor trackers\n"
-      commands += "/delete-floor-tracker <TRACKER_NUM> - Delete floor tracker by number in floor tracker list\n\n"
-      commands += "/track-sales - Get a DM whenever a Magic Eden sale is detected in the wallet set by /set-wallet\n\n"
+      commands += "/delete-floor-tracker <TRACKER_NUM> - Delete floor tracker by number in floor tracker list\n"
+      commands += "/track-sales - Get a DM whenever a Magic Eden sale is detected in the wallet set by /set-wallet\n"
       commands += "/untrack-sales - Disable Magic Eden sales tracker\n\n"
 
       commands += "*** Channel Commands ***\n"
