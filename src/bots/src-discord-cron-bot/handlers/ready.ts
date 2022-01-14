@@ -152,20 +152,24 @@ class CronBot {
       const lastActivity = this.usersActivity.get(user.id);
       if (lastActivity) {
         const newSales = currActivity.sales.filter((sale) => {
-          return Moment(sale.createdAt).isAfter(lastActivity);
+          const isNew = Moment(sale.createdAt).isAfter(lastActivity);
+          const isSale = sale.seller_address === user.walletPublicKey;
+          return isNew && isSale;
         });
         console.log(`${newSales.length} new sales found `);
         if (newSales.length > 0) {
           await this.sendDm(
             user.discordId,
-            `* New Magic Eden Sale * ${newSales.map(
-              (sale) =>
-                `${sale.collection_symbol
-                  .replaceAll("_", " ")
-                  .toLowerCase()} @ ${
-                  sale.parsedTransaction.seller_fee_amount / lampsInSol
-                }`
-            )}`
+            `* New Magic Eden Sale * ${newSales
+              .map(
+                (sale) =>
+                  `${sale.collection_symbol
+                    .replaceAll("_", " ")
+                    .toLowerCase()} @ ${
+                    sale.parsedTransaction.seller_fee_amount / lampsInSol
+                  }`
+              )
+              .join(", ")}`
           );
         }
       }
