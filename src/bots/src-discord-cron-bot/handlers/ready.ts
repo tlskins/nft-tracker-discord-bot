@@ -154,7 +154,10 @@ class CronBot {
         const newSales = currActivity.sales.filter((sale) => {
           const isNew = Moment(sale.createdAt).isAfter(lastActivity);
           const isSale = sale.seller_address === user.walletPublicKey;
-          return isNew && isSale;
+          const isAccBid =
+            sale.buyer_address === user.walletPublicKey &&
+            sale.txType === "acceptBid";
+          return isNew && (isSale || isAccBid);
         });
         console.log(`${newSales.length} new sales found `);
         if (newSales.length > 0) {
