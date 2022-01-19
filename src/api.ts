@@ -23,6 +23,14 @@ import {
   IFloorTracker,
   IMagicEdenSalesResp,
   IMagicEdenSale,
+  IMetadata,
+  IMetadataResp,
+  IWalletUpsert,
+  IWallet,
+  IWalletResp,
+  MarketListing,
+  IHatchTracker,
+  NetworkResp,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 import axios, { AxiosError } from "axios";
@@ -50,6 +58,75 @@ export const getCollectionMappings = async (
     if (axios.isAxiosError(e)) {
       const serverrError = e as AxiosError<ServerError>;
       const errMsg = `error getting collection mappings: ${serverrError.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+  }
+};
+
+export const getCollectionListings = async (
+  apiPath: string,
+  handleErr: (msg: string) => Promise<void>
+): Promise<MarketListing[] | undefined> => {
+  console.log("getting collection mappings...");
+  try {
+    const resp: NetworkResp<MarketListing[]> = await rest.get(
+      `/current-listings/${apiPath}`
+    );
+
+    return resp.data;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverrError = e as AxiosError<ServerError>;
+      const errMsg = `error getting collection listings: ${serverrError.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+  }
+};
+
+export const getHatchTrackers = async (
+  addrs: string[],
+  handleErr: (msg: string) => Promise<void>
+): Promise<IHatchTracker[] | undefined> => {
+  console.log("getting hatch trackerse...");
+  try {
+    const resp: NetworkResp<IHatchTracker[]> = await rest.get(
+      `/hatch-trackers/${addrs.join(",")}`
+    );
+
+    return resp.data;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverrError = e as AxiosError<ServerError>;
+      const errMsg = `error getting collection listings: ${serverrError.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+  }
+};
+
+export const upsertHatchTracker = async (
+  upsert: IHatchTracker,
+  handleErr: (msg: string) => Promise<void>
+): Promise<IHatchTracker | undefined> => {
+  console.log("upsert hatch tracker...");
+  try {
+    const resp: NetworkResp<IHatchTracker> = await rest.get(`/hatch-trackers`, {
+      params: upsert,
+    });
+
+    return resp.data;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverrError = e as AxiosError<ServerError>;
+      const errMsg = `error getting collection listings: ${serverrError.response?.data?.message}`;
       console.error(errMsg);
       handleErr(errMsg);
     } else {
@@ -408,6 +485,71 @@ export const getUserFloorTrackers = async (
     if (axios.isAxiosError(e)) {
       const serverErr = e as AxiosError<ServerError>;
       const errMsg = `error getting user floor trackers: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+  }
+};
+
+export const getMetadatas = async (
+  ids: string[],
+  handleErr: (msg: string) => Promise<void>
+): Promise<IMetadata[] | undefined> => {
+  try {
+    const resp = (await rest.get(
+      `/metadata/${ids.join(",")}`
+    )) as IMetadataResp;
+
+    return resp.data.metadata;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error getting metadata: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+  }
+};
+
+export const upsertMetadatas = async (
+  metadata: IMetadata[],
+  handleErr: (msg: string) => Promise<void>
+): Promise<boolean> => {
+  try {
+    await rest.post(`/metadata`, { metadata });
+
+    return true;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error upserting metadata: ${serverErr.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+    return false;
+  }
+};
+
+// wallets
+
+export const upsertWallet = async (
+  upsert: IWalletUpsert,
+  handleErr: (msg: string) => Promise<void>
+): Promise<IWallet | undefined> => {
+  try {
+    const resp = (await rest.post(`/wallet`, upsert)) as IWalletResp;
+
+    return resp.data.wallet;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverErr = e as AxiosError<ServerError>;
+      const errMsg = `error upserting wallet: ${serverErr.response?.data?.message}`;
       console.error(errMsg);
       handleErr(errMsg);
     } else {

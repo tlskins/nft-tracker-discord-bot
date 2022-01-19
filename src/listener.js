@@ -8,12 +8,17 @@ import {
   getEnrollment,
   getReferrals,
   getUserByDiscord,
+  getWallet,
   createFloorTracker,
   createUser,
   getUserFloorTrackers,
   deleteFloorTrackers,
 } from "./api";
-import { checkBalChange, getSolTransaction } from "./solana";
+import {
+  checkBalChange,
+  getSolTransaction
+} from "./solana/transactions"
+import { getWallets } from "./solana/coordinators"
 import {
   FindGlobalCollMapByPin,
   GetGlobalCollMap,
@@ -571,6 +576,63 @@ export const StartListener = async (listener) => {
         }
       }
 
+      return false
+    }
+
+    // see wallet
+    if (message.content.startsWith("/see-wallet ")) {
+      const splitMsg = message.content.split(" ")
+      if ( splitMsg.length !== 2 || splitMsg[1].length !== 44 ) {
+        await message.reply({
+          content: "Invalid command",
+          ephemeral: true,
+        });
+        return false
+      }
+
+      const discordId = message.author.id
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( !user ) return false
+      if ( !user.isOG && !user.isEnrolled ) {
+        await message.reply({ content: "Floor tracking only available to members and OG.", ephemeral: true })
+        return false
+      }
+
+      const walletPublicKey = splitMsg[1]
+      console.log('before get wallets...')
+      const wallets = await getWallets(user.id, [walletPublicKey], discordHandleErr)
+      console.log('after get wallets:', wallets)
+
+      let content = ""
+      for (let i=0; i < (wallets || []).length; i++) {
+        const wallet = wallets[i]
+        console.log('wallet...')
+        content += `\nWallet ${wallet.publicKey.slice(0,5)}...\nTracked\n`
+        if ( wallet.nfts.size() > 0 ) {
+          for (const nfts of wallet.nfts.values()) {
+            nfts.forEach( nft => {
+              console.log('nft...')
+              content += `${nft.title}\n`
+            })
+          }
+        }
+
+        content += `Untracked:\n`
+        if ( wallet.untracked.size() > 0) {
+          for (const [updAuth, metadatas] of wallet.untracked.entries()) {
+            metadatas.forEach( metadata => {
+              content += `${metadata.data.name}\n`
+            })
+          }
+        }
+      }
+      if (content === "") {
+        content = "Empty!"
+      }
+
+      console.log(content)
+
+      await message.reply({ content, ephemeral: true })
       return false
     }
   });
