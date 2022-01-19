@@ -447,3 +447,14 @@ export interface IParsedTransaction {
   transaction_id: string;
   TxType: string;
 }
+
+// stop tracker
+
+export interface IStopTracker {
+  id: string;
+  collection: string;
+  userId: string;
+  stopTrackerType: string;
+  deltaValue: number;
+  initPrice: number;
+}
