@@ -20,6 +20,10 @@ export type Policy = "all" | "random" | "single";
 
 export type CronRuleItem = Snowflake | WebhookMessageOptions | EmojiResolvable;
 
+export interface NetworkResp<T> {
+  data: T;
+}
+
 // Collection Tracker Types
 export interface CollectionTrackerResp {
   data: CollectionTrackerData;
@@ -388,6 +392,54 @@ export interface IFloorTracker {
   collection: string;
   isAbove: boolean;
   floor: number;
+}
+
+// solana nft
+
+export interface IHatchTracker {
+  id: string;
+  address: string;
+  apiPath: string;
+  listing: MarketListing;
+  tokenData: IMetadata;
+  nftData: INftData;
+}
+
+export interface INftData {
+  name: string;
+  symbol: string;
+  description: string;
+  seller_fee_basis_points: number;
+  image: string;
+  external_url: string;
+  attributes: NftAttribute[];
+  collection: NftCollection;
+  properties: NftProperty[];
+}
+
+interface NftAttribute {
+  trait_type: string;
+  value: string;
+}
+
+interface NftCollection {
+  name: string;
+  family: string;
+}
+
+interface NftFile {
+  type: string;
+  uri: string;
+}
+interface NftCreator {
+  address: string;
+  share: number;
+}
+
+interface NftProperty {
+  category: string;
+  files: NftFile[];
+  creators: NftCreator[];
 }
 
 // metaplex

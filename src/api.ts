@@ -25,6 +25,9 @@ import {
   IWalletUpsert,
   IWallet,
   IWalletResp,
+  MarketListing,
+  IHatchTracker,
+  NetworkResp,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 import axios, { AxiosError } from "axios";
@@ -52,6 +55,75 @@ export const getCollectionMappings = async (
     if (axios.isAxiosError(e)) {
       const serverrError = e as AxiosError<ServerError>;
       const errMsg = `error getting collection mappings: ${serverrError.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+  }
+};
+
+export const getCollectionListings = async (
+  apiPath: string,
+  handleErr: (msg: string) => Promise<void>
+): Promise<MarketListing[] | undefined> => {
+  console.log("getting collection mappings...");
+  try {
+    const resp: NetworkResp<MarketListing[]> = await rest.get(
+      `/current-listings/${apiPath}`
+    );
+
+    return resp.data;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverrError = e as AxiosError<ServerError>;
+      const errMsg = `error getting collection listings: ${serverrError.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+  }
+};
+
+export const getHatchTrackers = async (
+  addrs: string[],
+  handleErr: (msg: string) => Promise<void>
+): Promise<IHatchTracker[] | undefined> => {
+  console.log("getting hatch trackerse...");
+  try {
+    const resp: NetworkResp<IHatchTracker[]> = await rest.get(
+      `/hatch-trackers/${addrs.join(",")}`
+    );
+
+    return resp.data;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverrError = e as AxiosError<ServerError>;
+      const errMsg = `error getting collection listings: ${serverrError.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+  }
+};
+
+export const upsertHatchTracker = async (
+  upsert: IHatchTracker,
+  handleErr: (msg: string) => Promise<void>
+): Promise<IHatchTracker | undefined> => {
+  console.log("upsert hatch tracker...");
+  try {
+    const resp: NetworkResp<IHatchTracker> = await rest.get(`/hatch-trackers`, {
+      params: upsert,
+    });
+
+    return resp.data;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverrError = e as AxiosError<ServerError>;
+      const errMsg = `error getting collection listings: ${serverrError.response?.data?.message}`;
       console.error(errMsg);
       handleErr(errMsg);
     } else {

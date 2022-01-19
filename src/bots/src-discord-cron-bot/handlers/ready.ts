@@ -8,6 +8,7 @@ import {
   ICollectionMapping,
   UpdateCollectionTracker,
   CollectionTrackerData,
+  IHatchTracker,
 } from "../../../types";
 import {
   buildMarketEmbed,
@@ -21,11 +22,12 @@ import {
   buildPumpEmbed,
   toTokenAlertMsg,
 } from "./presenters";
+import { getSolNft } from "../../../solana/metaplex";
 import {
   deleteFloorTrackers,
   getCollectionMappings,
+  getCollectionListings,
   getMarketListings,
-  getTokenAlerts,
   resetTokenAlerts,
   syncSubscriptions,
   updateTracker,
@@ -57,23 +59,76 @@ class CronBot {
   async handleBot(): Promise<Promise<void>> {
     this.sendMessages();
     const min = Moment().minute();
-    // run every 30 minutes
     if (min % 30 === 0) {
       syncSubscriptions(this.sendErrMsg("sync-subs-err"));
       // this.checkTokenAlerts(); // disable token trackers for now
     }
 
-    // seed all pump text
-    // const webhook = await this._getWebhook(
-    //   process.env.CHANNEL_ALL_PUMPS as string
-    // );
-    // const pinMsgId = process.env.MARKETS_PIN_ID as string;
-    // await webhook.editMessage(pinMsgId, {
-    //   content:
-    //     "React with a ⏰ to this message to subscribe to All Pump events",
-    //   embeds: [],
-    // });
-    // console.log("seeded all pumps...");
+    // if (min % 10 === 0) {
+    //   this.checkHatched("dinodawg-kingdom");
+    // }
+    // this.sendAllHatched("dinodawg-kingdom");
+  }
+
+  async checkHatched(apiPath: string): Promise<void> {
+    const currLists = await getCollectionListings(
+      apiPath,
+      this.sendErrMsg("hatch-scraping")
+    );
+    if (!currLists || currLists.length === 0) return;
+    const firstList = currLists[0];
+    const solNft = await getSolNft(apiPath, firstList);
+    if (!solNft) return;
+    console.log(
+      `Checking hatched yet: ${solNft?.tokenData.data.name} = ${solNft.nftData.attributes}`
+    );
+    if (solNft.nftData.attributes.length > 0) {
+      const adminId = process.env.ADMIN_USER_ID as string;
+      this.sendDm(adminId, `* ${apiPath} Have Hatched! *`);
+    }
+  }
+
+  async sendAllHatched(apiPath: string): Promise<void> {
+    console.log(`Sending all hatched for ${apiPath}`);
+    const currLists = await getCollectionListings(
+      apiPath,
+      this.sendErrMsg("hatch-scraping")
+    );
+    console.log(`Got ${currLists?.length} listings`);
+
+    if (!currLists || currLists.length === 0) {
+      console.log("no listings!");
+      return;
+    }
+
+    const adminId = process.env.ADMIN_USER_ID as string;
+    let batch = [] as IHatchTracker[];
+    for (let i = 0; i < currLists.length; i++) {
+      console.log(`processing listing ${i}`);
+      const list = currLists[i];
+      const solNft = await getSolNft(apiPath, list);
+      if (!solNft) continue;
+      batch.push(solNft);
+
+      // send 10 listings at a time
+      if (batch.length === 10) {
+        const content = batch
+          .map((nft) => {
+            const attrs = nft.nftData.attributes
+              .sort((a, b) => (a.trait_type > b.trait_type ? 1 : -1))
+              .map((attr) => attr.value)
+              .join(", ");
+            const img = nft.nftData.image;
+            const price = list.price.toFixed(2);
+            return `${list.title} @ ${price} - ${attrs} - ${img} - ${list.url}`;
+          })
+          .join("\n");
+
+        console.log(`sending batch... ${i}`);
+        this.sendDm(adminId, content);
+        batch = [];
+      }
+    }
   }
 
   async sendDm(userId: string, message: string) {
@@ -123,53 +178,52 @@ class CronBot {
     }
   }
 
-  async checkTokenAlerts(): Promise<void> {
-    if (this.lastTokenAlert?.isAfter(Moment().add(-1, "hour"))) {
-      console.log("not yet time to check token alerts...");
-      return;
-    }
-    const tokenAlerts = await getTokenAlerts(this.sendErrMsg("tokenAlertErrs"));
-    if (!tokenAlerts) {
-      console.log("no token alerts");
-      return;
-    }
+  // async checkTokenAlerts(): Promise<void> {
+  //   if (this.lastTokenAlert?.isAfter(Moment().add(-1, "hour"))) {
+  //     console.log("not yet time to check token alerts...");
+  //     return;
+  //   }
+  //   if (!tokenAlerts) {
+  //     console.log("no token alerts");
+  //     return;
+  //   }
 
-    // aggregate alerts by user
-    const userAlerts = new Map() as Map<string, string[]>;
-    const discordIds = [] as string[];
-    tokenAlerts.forEach((tokenTracker) => {
-      console.log(`aggregating ${tokenTracker.id}`);
-      const { discordId } = tokenTracker;
-      if (discordId) {
-        const currAlerts = userAlerts.get(discordId);
-        if (currAlerts === undefined) {
-          discordIds.push(discordId);
-        }
-        userAlerts.set(discordId, [
-          ...(currAlerts || []),
-          toTokenAlertMsg(tokenTracker),
-        ]);
-      }
-    });
+  //   // aggregate alerts by user
+  //   const userAlerts = new Map() as Map<string, string[]>;
+  //   const discordIds = [] as string[];
+  //   tokenAlerts.forEach((tokenTracker) => {
+  //     console.log(`aggregating ${tokenTracker.id}`);
+  //     const { discordId } = tokenTracker;
+  //     if (discordId) {
+  //       const currAlerts = userAlerts.get(discordId);
+  //       if (currAlerts === undefined) {
+  //         discordIds.push(discordId);
+  //       }
+  //       userAlerts.set(discordId, [
+  //         ...(currAlerts || []),
+  //         toTokenAlertMsg(tokenTracker),
+  //       ]);
+  //     }
+  //   });
 
-    // send dms
-    discordIds.forEach((discordId) => {
-      console.log(`sending dm to ${discordId}`);
-      const alertMsgs = userAlerts.get(discordId);
-      if (alertMsgs) {
-        this.sendDm(discordId, alertMsgs?.join("\n"));
-      }
-    });
+  //   // send dms
+  //   discordIds.forEach((discordId) => {
+  //     console.log(`sending dm to ${discordId}`);
+  //     const alertMsgs = userAlerts.get(discordId);
+  //     if (alertMsgs) {
+  //       this.sendDm(discordId, alertMsgs?.join("\n"));
+  //     }
+  //   });
 
-    // reset alerts
-    await resetTokenAlerts(
-      (tokenAlerts || []).map((a) => a.id),
-      this.sendErrMsg("tokenAlertErrs")
-    );
+  //   // reset alerts
+  //   await resetTokenAlerts(
+  //     (tokenAlerts || []).map((a) => a.id),
+  //     this.sendErrMsg("tokenAlertErrs")
+  //   );
 
-    // update last broadcast
-    this.lastTokenAlert = Moment();
-  }
+  //   // update last broadcast
+  //   this.lastTokenAlert = Moment();
+  // }
 
   async handleMessage(
     collMap: ICollectionMapping

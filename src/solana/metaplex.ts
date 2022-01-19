@@ -8,75 +8,41 @@ import { deserializeUnchecked } from "borsh";
 import * as web3 from "@solana/web3.js";
 
 import { StringPublicKey, findProgramAddress, toPublicKey } from "./helpers";
-import { IMetadata, IMetaplexCreator } from "../types";
+import {
+  IMetadata,
+  IMetaplexCreator,
+  NetworkResp,
+  INftData,
+  IHatchTracker,
+  MarketListing,
+} from "../types";
 
 import rest from "../bots/src-discord-cron-bot/rest";
 
-interface NetworkResp<T> {
-  data: T;
-}
-
-interface NftData {
-  name: string;
-  symbol: string;
-  description: string;
-  seller_fee_basis_points: number;
-  image: string;
-  external_url: string;
-  attributes: NftAttribute[];
-  collection: NftCollection;
-  properties: NftProperty[];
-}
-
-interface NftAttribute {
-  trait_type: string;
-  value: string;
-}
-
-interface NftCollection {
-  name: string;
-  family: string;
-}
-
-interface NftFile {
-  type: string;
-  uri: string;
-}
-interface NftCreator {
-  address: string;
-  share: number;
-}
-
-interface NftProperty {
-  category: string;
-  files: NftFile[];
-  creators: NftCreator[];
-}
-
-export const testSolana = async (): Promise<undefined> => {
-  console.log("testing solana...");
-
-  const metadata = await getSolMetadata(
-    "3RFQmL7HqWsvJDZYM6NNVsMBZhmWSTFb5usN6v4nQv7z"
-  );
-  if (!metadata) {
+export const getSolNft = async (
+  apiPath: string,
+  listing: MarketListing
+): Promise<IHatchTracker | undefined> => {
+  const tokenData = await getSolToken(listing.tokenAddress);
+  if (!tokenData) {
     console.log("metadata not found");
     return;
   }
 
-  console.log(metadata);
-  console.log(metadata.data.uri);
+  const resp = (await rest.get(tokenData.data.uri)) as NetworkResp<INftData>;
+  const nftData = resp.data as INftData;
 
-  const resp = (await rest.get(metadata.data.uri)) as NetworkResp<NftData>;
-  console.log(resp.data);
-  resp.data.attributes.forEach((attr) => {
-    console.log(attr);
-  });
-
-  return;
+  return {
+    id: listing.tokenAddress,
+    address: listing.tokenAddress,
+    apiPath,
+    listing,
+    tokenData,
+    nftData,
+  };
 };
 
-export const getSolMetadata = async (
+export const getSolToken = async (
   tokenAddr: string
 ): Promise<IMetadata | undefined> => {
   // Connect to cluster

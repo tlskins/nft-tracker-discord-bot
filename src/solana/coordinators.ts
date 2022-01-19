@@ -1,6 +1,6 @@
 import { IMetadata, IWallet, IWalletUpsert } from "../types";
 import { getSolAccountMintIds } from "./accounts";
-import { getSolMetadata } from "./metaplex";
+import { getSolToken } from "./metaplex";
 import { getMetadatas, upsertMetadatas, upsertWallet } from "../api";
 import Moment from "moment";
 
@@ -27,7 +27,7 @@ export const getWallets = async (
     const missingIds = mintIds.filter((mintId) => !metaMap.get(mintId));
     for (let i = 0; i < missingIds.length; i++) {
       const mintId = missingIds[i];
-      const metadata = await getSolMetadata(mintId);
+      const metadata = await getSolToken(mintId);
       if (metadata) {
         missingMetadats.push(metadata);
         metaMap.set(mintId, metadata);

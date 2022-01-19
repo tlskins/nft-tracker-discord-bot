@@ -2,8 +2,6 @@ import "dotenv/config";
 import Moment from "moment";
 const { Client, Intents } = require("discord.js");
 
-import { testSolana } from './solana/metaplex'
-
 import {
   updateCollMap,
   updateUser,
@@ -71,12 +69,6 @@ const getEnrollBountyStr = enrollment => {
 export const StartListener = async (listener) => {
   listener.on("ready", async () => {
     console.log(`Logged in as ${listener.user.tag}!`);
-
-
-    // *** Testing 
-    await testSolana()
-
-
 
     // track invites
     const guild = listener.guilds.cache.get(process.env.SERVER_ID);
