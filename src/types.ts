@@ -455,13 +455,12 @@ export interface IParsedTransaction {
 // stop tracker
 
 export interface IStopTracker {
-  id: string;
+  id?: string;
   collection: string;
   userId: string;
   stopTrackerType: string;
   deltaValue: number;
   initPrice: number;
-  // solana nft
 }
 
 export interface IHatchTracker {

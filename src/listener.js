@@ -13,6 +13,7 @@ import {
   createUser,
   getUserFloorTrackers,
   deleteFloorTrackers,
+  upsertStopTracker,
 } from "./api";
 import {
   checkBalChange,
@@ -25,6 +26,10 @@ import {
   FindGlobalCollMapByChannel,
   UpdateGlobalCollMap,
 } from "./collMappings"
+import {
+  AddUserStopTracker,
+  PrintStopTracker,
+} from "./stopTrackers"
 
 export const BuildListener = () => {
   return new Client({
@@ -186,11 +191,14 @@ export const StartListener = async (listener) => {
       commands += "*** Channel Commands ***\n"
       commands += "/notify-floor-above <FLOOR_PRICE> - Send in the channel of the collection you want a DM alert when the floor price is ABOVE a certain number\n"
       commands += "/notify-floor-below <FLOOR_PRICE> - Send in the channel of the collection you want a DM alert when the floor price is BELOW a certain number\n"
+      commands += "/stop-gain <DECIMAL_PCT_CHANGE> - DM alert when the floor price has gained X% from its lowest floor\n"
+      commands += "/stop-loss <DECIMAL_PCT_CHANGE> - DM alert when the floor price has fallen X% from its highest floor\n"
 
       await message.reply({ content: commands, ephemeral: true })
       return false
     }
 
+    // channel commands
     if (message.channel.type !== "DM") {
       const collMap = FindGlobalCollMapByChannel(message.channel.id)
       if (!collMap) return false;
@@ -234,6 +242,52 @@ export const StartListener = async (listener) => {
             ephemeral: true,
           })
         }
+        return false;
+      }
+
+      if (message.content.startsWith("/stop-")) {
+        const discordId = message.author.id
+        const user = await getUserByDiscord(discordId, discordHandleErr)
+        if ( !user ) {
+          await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
+          return false
+        }
+        if ( !user.isOG && !user.isEnrolled && (user.inactiveDate && Moment(user.inactiveDate).isBefore(Moment()))) {
+          await message.reply({ content: "Stop loss / gain only available for members and OG.", ephemeral: true })
+          return false
+        }
+
+        let trackType
+        const splitMsg = message.content.split(" ")
+        if (splitMsg.length === 2) {
+          trackType = splitMsg[0].split("-")[1]
+        }
+        console.log(splitMsg)
+        if ( splitMsg.length !== 2 || isNaN(parseFloat(splitMsg[1])) || !["gain", "loss"].includes( trackType )) {
+          await message.reply({
+            content: "Invalid command",
+            ephemeral: true,
+          });
+          return false
+        }
+        const deltaValue = parseFloat(splitMsg[1])
+        const stopTrackerType = trackType === "gain" ? "Stop Gain" : "Stop Loss"
+        const tracker = await upsertStopTracker({
+          collection: collMap.collection,
+          userId: user.discordId,
+          stopTrackerType,
+          deltaValue,
+          initPrice: 0,
+        })
+        if (tracker) {
+          await message.reply({
+            content: `${ stopTrackerType } Alert set for: ${collMap.collection} at ${ deltaValue * 100 }%`,
+            ephemeral: true,
+          })
+          AddUserStopTracker( tracker )
+        }
+
+        return false
       }
 
       return false;
@@ -511,6 +565,25 @@ export const StartListener = async (listener) => {
           ephemeral: true,
         });
       }
+    }
+
+    // print stop trackers
+    if (message.content == "/print-stop-trackers") {
+      const discordId = message.author.id
+
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( !user ) {
+        await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
+        return false
+      }
+      if ( !user.isOG && !user.isEnrolled ) {
+        await message.reply({ content: "This is an admin tool.", ephemeral: true })
+        return false
+      }
+
+      PrintStopTracker()
+
+      return false
     }
 
     // get floor trackers

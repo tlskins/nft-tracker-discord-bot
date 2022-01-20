@@ -12,6 +12,7 @@ import {
   IUser,
   IMagicEdenActivity,
   IHatchTracker,
+  IStopTracker,
 } from "../../../types";
 import {
   buildMarketEmbed,
@@ -36,12 +37,21 @@ import {
   updateTracker,
   updateCollMap,
   getMagicEdenSales,
+  getStopTrackers,
+  deleteStopTracker,
+  upsertStopTracker,
 } from "../../../api";
 import {
   GetGlobalCollMaps,
   SetGlobalCollMaps,
   UpdateGlobalCollMap,
 } from "../../../collMappings";
+import {
+  SetGlobalStopTrackers,
+  GetGlobalCollStopTrackers,
+  DeleteStopTracker,
+  UpdateStopTracker,
+} from "../../../stopTrackers";
 import config from "../config.json";
 
 class CronBot {
@@ -60,6 +70,7 @@ class CronBot {
     this.usersActivity = new Map();
     this.errCounts = new Map();
     this.setCollectionMappings();
+    this.seedStopTrackers();
     this.syncMEWalletActivity();
   }
 
@@ -185,6 +196,15 @@ class CronBot {
       console.log(`${collMaps.size} Collection Mappings set.`);
     } else {
       throw Error("Unable to load collection mappings");
+    }
+  }
+
+  async seedStopTrackers(): Promise<void> {
+    console.log("seeding stop trackers...");
+    const stopTrackers = await getStopTrackers(this.sendErrMsg("setCollMaps"));
+    if (stopTrackers) {
+      SetGlobalStopTrackers(stopTrackers);
+      console.log(`stop trackers seeded...`);
     }
   }
 
@@ -415,10 +435,14 @@ class CronBot {
     tracker.apiColl = apiPath;
 
     // send floor tracker alerts
+    const currFloorPrice = currentFloor.marketFloor || 0.0;
     (floorTrackers || []).forEach(async (tracker) => {
       const trackType = tracker.isAbove ? "above" : "below";
-      const currFloor = currentFloor.marketFloor?.toFixed(2);
-      const floorMsg = `* Floor Alert * ${tracker.collection} current floor ${currFloor} SOL ${trackType} ${tracker.floor}`;
+      const floorMsg = `* Floor Alert * ${
+        tracker.collection
+      } current floor ${currFloorPrice.toFixed(2)} SOL ${trackType} ${
+        tracker.floor
+      }`;
       await this.sendDm(tracker.discordId, floorMsg);
       console.log(`Alerted ${tracker.discordId}: ${floorMsg}`);
       deleteFloorTrackers(
@@ -426,6 +450,69 @@ class CronBot {
         this.sendErrMsg(apiPath + "-update-err")
       );
     });
+
+    // send stop tracker alerts
+    const userStopTrackers = GetGlobalCollStopTrackers(collection);
+    if (userStopTrackers) {
+      console.log(
+        `${userStopTrackers.size} users stop tracking ${collection}...`
+      );
+      const errKey = "stop-tracker-err";
+      for (const entry of userStopTrackers.entries()) {
+        const userId = entry[0];
+        const trackers = entry[1];
+
+        // iterate through all stop trackers for user
+        for (let i = 0; i < trackers.length; i++) {
+          const tracker = trackers[i];
+          console.log(
+            `Checking ${tracker.deltaValue * 100}% | ${tracker.initPrice}`
+          );
+
+          // handle stop loss
+          if (tracker.stopTrackerType === "Stop Loss") {
+            const stopVal = tracker.initPrice * (1 - tracker.deltaValue);
+            if (currFloorPrice > tracker.initPrice || tracker.initPrice === 0) {
+              // update comp price
+              const updates = { ...tracker, initPrice: currFloorPrice };
+              const updated = await upsertStopTracker(
+                updates,
+                this.sendErrMsg(errKey)
+              );
+              if (updated) UpdateStopTracker(updated);
+            } else if (currFloorPrice <= stopVal && tracker.initPrice !== 0) {
+              // dm user their stop has been hit
+              const floorStr = currFloorPrice.toFixed(2);
+              const msg = `* Stop Loss * ${collection} Floor @ ${floorStr}`;
+              await this.sendDm(userId, msg);
+              console.log(`Alerted ${userId}: ${msg}`);
+              deleteStopTracker(tracker.id as string, this.sendErrMsg(errKey));
+              DeleteStopTracker(tracker);
+            }
+          } else if (tracker.stopTrackerType === "Stop Gain") {
+            // handle stop gain
+            const stopVal = tracker.initPrice * (1 + tracker.deltaValue);
+            if (currFloorPrice < tracker.initPrice || tracker.initPrice === 0) {
+              // update comp price
+              const updates = { ...tracker, initPrice: currFloorPrice };
+              const updated = await upsertStopTracker(
+                updates,
+                this.sendErrMsg(errKey)
+              );
+              if (updated) UpdateStopTracker(updated);
+            } else if (currFloorPrice >= stopVal && tracker.initPrice !== 0) {
+              // dm user their stop has been hit
+              const floorStr = currFloorPrice.toFixed(2);
+              const msg = `* Stop Gain * ${collection} Floor @ ${floorStr}`;
+              await this.sendDm(userId, msg);
+              console.log(`Alerted ${userId}: ${msg}`);
+              deleteStopTracker(tracker.id as string, this.sendErrMsg(errKey));
+              DeleteStopTracker(tracker);
+            }
+          }
+        }
+      }
+    }
 
     return tracker;
   }

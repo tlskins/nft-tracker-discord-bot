@@ -31,6 +31,7 @@ import {
   MarketListing,
   IHatchTracker,
   NetworkResp,
+  IStopTracker,
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 import axios, { AxiosError } from "axios";
@@ -118,21 +119,89 @@ export const upsertHatchTracker = async (
 ): Promise<IHatchTracker | undefined> => {
   console.log("upsert hatch tracker...");
   try {
-    const resp: NetworkResp<IHatchTracker> = await rest.get(`/hatch-trackers`, {
-      params: upsert,
-    });
+    const resp: NetworkResp<IHatchTracker> = await rest.post(
+      `/hatch-trackers`,
+      {
+        params: upsert,
+      }
+    );
 
     return resp.data;
   } catch (e) {
     if (axios.isAxiosError(e)) {
       const serverrError = e as AxiosError<ServerError>;
-      const errMsg = `error getting collection listings: ${serverrError.response?.data?.message}`;
+      const errMsg = `error upserting hatch tracker: ${serverrError.response?.data?.message}`;
       console.error(errMsg);
       handleErr(errMsg);
     } else {
       console.error(e);
     }
   }
+};
+
+export const getStopTrackers = async (
+  handleErr: (msg: string) => Promise<void>
+): Promise<IStopTracker[] | undefined> => {
+  console.log("getting stop trackerse...");
+  try {
+    const resp: NetworkResp<IStopTracker[]> = await rest.get(`/stop-trackers`);
+
+    return resp.data;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverrError = e as AxiosError<ServerError>;
+      const errMsg = `error getting stop trackers: ${serverrError.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+  }
+};
+
+export const upsertStopTracker = async (
+  upsert: IStopTracker,
+  handleErr: (msg: string) => Promise<void>
+): Promise<IStopTracker | undefined> => {
+  console.log("upsert stop tracker...", upsert);
+  try {
+    const resp: NetworkResp<IStopTracker> = await rest.post(
+      `/stop-trackers`,
+      upsert
+    );
+
+    return resp.data;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverrError = e as AxiosError<ServerError>;
+      const errMsg = `error upserting stop tracker: ${serverrError.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+    } else {
+      console.error(e);
+    }
+  }
+};
+
+export const deleteStopTracker = async (
+  id: string,
+  handleErr: (msg: string) => Promise<void>
+): Promise<boolean> => {
+  console.log("deleting stop tracker...");
+  try {
+    await rest.delete(`/stop-trackers/${id}`);
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const serverrError = e as AxiosError<ServerError>;
+      const errMsg = `error deleting stop tracker: ${serverrError.response?.data?.message}`;
+      console.error(errMsg);
+      handleErr(errMsg);
+      return false;
+    } else {
+      console.error(e);
+    }
+  }
+  return true;
 };
 
 export const getMarketListings = async (
