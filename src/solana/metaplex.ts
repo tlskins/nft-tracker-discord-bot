@@ -19,7 +19,7 @@ import {
 
 import rest from "../bots/src-discord-cron-bot/rest";
 
-export const getSolNft = async (
+export const getHatchTracker = async (
   apiPath: string,
   listing: MarketListing
 ): Promise<IHatchTracker | undefined> => {
@@ -40,6 +40,21 @@ export const getSolNft = async (
     tokenData,
     nftData,
   };
+};
+
+export const getSolNft = async (
+  addr: string
+): Promise<INftData | undefined> => {
+  const tokenData = await getSolToken(addr);
+  if (!tokenData) {
+    console.log(`metadata not found for ${addr}`);
+    return;
+  }
+
+  const resp = (await rest.get(tokenData.data.uri)) as NetworkResp<INftData>;
+  const nftData = resp.data as INftData;
+
+  return nftData;
 };
 
 export const getSolToken = async (

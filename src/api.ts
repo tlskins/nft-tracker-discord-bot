@@ -71,7 +71,7 @@ export const getCollectionListings = async (
   apiPath: string,
   handleErr: (msg: string) => Promise<void>
 ): Promise<MarketListing[] | undefined> => {
-  console.log("getting collection mappings...");
+  console.log("getting collection listings...");
   try {
     const resp: NetworkResp<MarketListing[]> = await rest.get(
       `/current-listings/${apiPath}`
@@ -189,7 +189,7 @@ export const deleteStopTracker = async (
 ): Promise<boolean> => {
   console.log("deleting stop tracker...");
   try {
-    await rest.delete(`/stop-trackers/${id}`);
+    await rest.delete(`/stop-trackers`, { params: { id } });
   } catch (e) {
     if (axios.isAxiosError(e)) {
       const serverrError = e as AxiosError<ServerError>;

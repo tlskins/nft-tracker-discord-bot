@@ -47,6 +47,10 @@ import {
   UpdateGlobalCollMap,
 } from "../../../collMappings";
 import {
+  GetGlobalHatchTrackers,
+  RemoveHatchTracker,
+} from "../../../hatchTrackers";
+import {
   SetGlobalStopTrackers,
   GetGlobalCollStopTrackers,
   DeleteStopTracker,
@@ -85,69 +89,40 @@ class CronBot {
       this.syncMEWalletActivity();
     }
 
-    // if (min % 10 === 0) {
-    //   this.checkHatched("dinodawg-kingdom");
-    // }
-    // this.sendAllHatched("dinodawg-kingdom");
-  }
-
-  async checkHatched(apiPath: string): Promise<void> {
-    const currLists = await getCollectionListings(
-      apiPath,
-      this.sendErrMsg("hatch-scraping")
-    );
-    if (!currLists || currLists.length === 0) return;
-    const firstList = currLists[0];
-    const solNft = await getSolNft(apiPath, firstList);
-    if (!solNft) return;
-    console.log(
-      `Checking hatched yet: ${solNft?.tokenData.data.name} = ${solNft.nftData.attributes}`
-    );
-    if (solNft.nftData.attributes.length > 0) {
-      const adminId = process.env.ADMIN_USER_ID as string;
-      this.sendDm(adminId, `* ${apiPath} Have Hatched! *`);
+    if (min % 5 === 0) {
+      this.checkHatched();
     }
   }
 
-  async sendAllHatched(apiPath: string): Promise<void> {
-    console.log(`Sending all hatched for ${apiPath}`);
-    const currLists = await getCollectionListings(
-      apiPath,
-      this.sendErrMsg("hatch-scraping")
-    );
-    console.log(`Got ${currLists?.length} listings`);
+  async checkHatched(): Promise<void> {
+    console.log(`checking hatched...`);
+    const hatchTrackers = GetGlobalHatchTrackers();
+    for (const entry of hatchTrackers.entries()) {
+      const userId = entry[0];
+      const trackers = entry[1];
+      console.log(`${userId} tracking ${trackers.length} hatching...`);
+      for (let i = 0; i < trackers.length; i++) {
+        const address = trackers[i];
+        console.log(`checking ${address}...`);
+        const solNft = await getSolNft(address);
+        if (!solNft) continue;
 
-    if (!currLists || currLists.length === 0) {
-      console.log("no listings!");
-      return;
-    }
-
-    const adminId = process.env.ADMIN_USER_ID as string;
-    let batch = [] as IHatchTracker[];
-    for (let i = 0; i < currLists.length; i++) {
-      console.log(`processing listing ${i}`);
-      const list = currLists[i];
-      const solNft = await getSolNft(apiPath, list);
-      if (!solNft) continue;
-      batch.push(solNft);
-
-      // send 10 listings at a time
-      if (batch.length === 10) {
-        const content = batch
-          .map((nft) => {
-            const attrs = nft.nftData.attributes
-              .sort((a, b) => (a.trait_type > b.trait_type ? 1 : -1))
-              .map((attr) => attr.value)
-              .join(", ");
-            const img = nft.nftData.image;
-            const price = list.price.toFixed(2);
-            return `${list.title} @ ${price} - ${attrs} - ${img} - ${list.url}`;
-          })
-          .join("\n");
-
-        console.log(`sending batch... ${i}`);
-        this.sendDm(adminId, content);
-        batch = [];
+        const noAttrs = solNft.attributes.length === 0;
+        const noReveal = solNft.attributes.some(
+          (attr) => attr.value === "Not revealed"
+        );
+        if (noAttrs || noReveal) {
+          console.log(`${address} not revealed yet...`);
+        } else {
+          const attrStr = solNft.attributes
+            .map((a) => `${a.trait_type}: ${a.value}`)
+            .join("\n");
+          this.sendDm(
+            userId,
+            `* Token Hatched * \n${`https://magiceden.io/item-details/${address}`}\n\n${attrStr}`
+          );
+          RemoveHatchTracker(userId, address);
+        }
       }
     }
   }

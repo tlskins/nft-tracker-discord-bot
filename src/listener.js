@@ -30,6 +30,11 @@ import {
   AddUserStopTracker,
   PrintStopTracker,
 } from "./stopTrackers"
+import {
+  RemoveHatchTracker,
+  AddHatchTracker,
+  GetUserHatchTrackers,
+} from "./hatchTrackers"
 
 export const BuildListener = () => {
   return new Client({
@@ -185,6 +190,9 @@ export const StartListener = async (listener) => {
       commands += "/enroll-transaction <TRX_ID> - Verify membership payment to degenbible.sol with payment transaction id & gain membership\n"
       commands += "/list-floor-trackers - List all your current active floor trackers\n"
       commands += "/delete-floor-tracker <TRACKER_NUM> - Delete floor tracker by number in floor tracker list\n"
+      commands += "/track-hatch <TOKEN_ADDRESS> - Get a DM when this token has been revealed\n"
+      commands += "/remove-hatch <TOKEN_ADDRESS> - Remove hatch tracker\n"
+      commands += "/print-hatch - Print hatches you are tracking\n"
       commands += "/track-sales - Get a DM whenever a Magic Eden sale is detected in the wallet set by /set-wallet\n"
       commands += "/untrack-sales - Disable Magic Eden sales tracker\n\n"
 
@@ -291,6 +299,91 @@ export const StartListener = async (listener) => {
       }
 
       return false;
+    }
+
+    // add hatch tracker
+    if (message.content.startsWith("/track-hatch ")) {
+      const splitMsg = message.content.split(" ")
+      if ( splitMsg.length !== 2 || splitMsg[1].length < 10 ) {
+        await message.reply({
+          content: "Invalid command",
+          ephemeral: true,
+        });
+        return false
+      }
+      const discordId = message.author.id
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( !user ) {
+        await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
+        return false
+      }
+      if ( !user.isOG && !user.isEnrolled && (user.inactiveDate && Moment(user.inactiveDate).isBefore(Moment()))) {
+        await message.reply({ content: "Hatch tracker only available for members and OG.", ephemeral: true })
+        return false
+      }
+      
+      const address = splitMsg[1]
+
+      AddHatchTracker(discordId, address)
+      await message.reply({
+        content: `Hatch tracking: ${address}`,
+        ephemeral: true,
+      });
+
+      return false
+    }
+
+    // remove hatch tracker
+    if (message.content.startsWith("/remove-hatch ")) {
+      const splitMsg = message.content.split(" ")
+      if ( splitMsg.length !== 2 || splitMsg[1].length < 10 ) {
+        await message.reply({
+          content: "Invalid command",
+          ephemeral: true,
+        });
+        return false
+      }
+      const discordId = message.author.id
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( !user ) {
+        await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
+        return false
+      }
+      if ( !user.isOG && !user.isEnrolled && (user.inactiveDate && Moment(user.inactiveDate).isBefore(Moment()))) {
+        await message.reply({ content: "Hatch tracker only available for members and OG.", ephemeral: true })
+        return false
+      }
+      
+      const address = splitMsg[1]
+
+      RemoveHatchTracker(discordId, address)
+      await message.reply({
+        content: `Hatch tracker removed: ${address}`,
+        ephemeral: true,
+      });
+
+      return false
+    }
+
+    // print hatch tracker
+    if (message.content === "/print-hatch") {
+      const discordId = message.author.id
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( !user ) {
+        await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
+        return false
+      }
+      if ( !user.isOG && !user.isEnrolled && (user.inactiveDate && Moment(user.inactiveDate).isBefore(Moment()))) {
+        await message.reply({ content: "Hatch tracker only available for members and OG.", ephemeral: true })
+        return false
+      }
+      
+      const trackers = GetUserHatchTrackers(discordId)
+      let content = "Hatch Trackers:\n"
+      trackers.forEach( addr => content += `${addr}\n` )
+      await message.reply({ content, ephemeral: true });
+
+      return false
     }
 
     // get enroll price
