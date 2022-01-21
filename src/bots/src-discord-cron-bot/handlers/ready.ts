@@ -117,9 +117,10 @@ class CronBot {
           const attrStr = solNft.attributes
             .map((a) => `${a.trait_type}: ${a.value}`)
             .join("\n");
+          const edenAddr = `https://magiceden.io/item-details/${address}`;
           this.sendDm(
             userId,
-            `* Token Hatched * \n${`https://magiceden.io/item-details/${address}`}\n\n${attrStr}`
+            `* ${solNft.name} Hatched * \n${edenAddr}\n\n${attrStr}`
           );
           RemoveHatchTracker(userId, address);
         }
