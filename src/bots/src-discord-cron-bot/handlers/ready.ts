@@ -115,12 +115,13 @@ class CronBot {
           console.log(`${address} not revealed yet...`);
         } else {
           const attrStr = solNft.attributes
+            .sort((a, b) => (a.trait_type > b.trait_type ? 1 : -1))
             .map((a) => `${a.trait_type}: ${a.value}`)
             .join("\n");
           const edenAddr = `https://magiceden.io/item-details/${address}`;
           this.sendDm(
             userId,
-            `* ${solNft.name} Hatched * \n${edenAddr}\n\n${attrStr}`
+            `* ${solNft.name} Hatched * \n${edenAddr}\n${solNft.image}\n\n${attrStr}`
           );
           RemoveHatchTracker(userId, address);
         }

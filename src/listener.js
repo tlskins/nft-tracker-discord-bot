@@ -19,6 +19,7 @@ import {
   checkBalChange,
   getSolTransaction
 } from "./solana/transactions"
+import { getSolNft } from "./solana/metaplex"
 import { getWallets } from "./solana/coordinators"
 import {
   FindGlobalCollMapByPin,
@@ -193,6 +194,7 @@ export const StartListener = async (listener) => {
       commands += "/track-hatch <TOKEN_ADDRESS> - Get a DM when this token has been revealed\n"
       commands += "/remove-hatch <TOKEN_ADDRESS> - Remove hatch tracker\n"
       commands += "/print-hatch - Print hatches you are tracking\n"
+      commands += "/nft-attributes <TOKEN_ADDRESS> - Prints NFT attributes for the token\n"
       commands += "/track-sales - Get a DM whenever a Magic Eden sale is detected in the wallet set by /set-wallet\n"
       commands += "/untrack-sales - Disable Magic Eden sales tracker\n\n"
 
@@ -302,7 +304,7 @@ export const StartListener = async (listener) => {
     }
 
     // add hatch tracker
-    if (message.content.startsWith("/track-hatch ")) {
+    if (message.content.startsWith("/nft-attributes ")) {
       const splitMsg = message.content.split(" ")
       if ( splitMsg.length !== 2 || splitMsg[1].length < 10 ) {
         await message.reply({
@@ -324,9 +326,43 @@ export const StartListener = async (listener) => {
       
       const address = splitMsg[1]
 
-      AddHatchTracker(discordId, address)
+      const solNft = await getSolNft(address);
+      if (!solNft) {
+        await message.reply({
+          content: `Data not found...`,
+          ephemeral: true,
+        });
+      };
+
+      const attrStr = solNft.attributes
+        .sort((a, b) => (a.trait_type > b.trait_type ? 1 : -1))
+        .map((a) => `${a.trait_type}: ${a.value}`)
+        .join("\n");
+      const content = `* ${solNft.name} Attributes * \n${solNft.image}\n\n${attrStr}`
+      message.reply({ content, ephemeral: true });
+
+      return false
+    }
+
+    // add hatch tracker
+    if (message.content.startsWith("/track-hatch ")) {
+      const discordId = message.author.id
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( !user ) {
+        await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
+        return false
+      }
+      if ( !user.isOG && !user.isEnrolled && (user.inactiveDate && Moment(user.inactiveDate).isBefore(Moment()))) {
+        await message.reply({ content: "Hatch tracker only available for members and OG.", ephemeral: true })
+        return false
+      }
+      
+      const addrStr = message.content.slice(13)
+      const addresses = addrStr.split(" ")
+      addresses.forEach( address => AddHatchTracker(discordId, address))
+
       await message.reply({
-        content: `Hatch tracking: ${address}`,
+        content: `Added ${addresses.length} hatch tracker`,
         ephemeral: true,
       });
 
