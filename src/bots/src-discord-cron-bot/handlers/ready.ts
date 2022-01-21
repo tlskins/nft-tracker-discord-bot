@@ -465,14 +465,13 @@ class CronBot {
         // iterate through all stop trackers for user
         for (let i = 0; i < trackers.length; i++) {
           const tracker = trackers[i];
-          console.log(
-            `Checking ${tracker.deltaValue * 100}% | ${tracker.initPrice}`
-          );
+          const { id, initPrice, deltaValue, stopTrackerType } = tracker;
+          console.log(`Checking ${deltaValue * 100}% | ${initPrice}`);
 
           // handle stop loss
-          if (tracker.stopTrackerType === "Stop Loss") {
-            const stopVal = tracker.initPrice * (1 - tracker.deltaValue);
-            if (currFloorPrice > tracker.initPrice || tracker.initPrice === 0) {
+          if (stopTrackerType === "Stop Loss") {
+            const stopVal = initPrice * (1 - deltaValue);
+            if (currFloorPrice > initPrice || initPrice === 0) {
               // update comp price
               const updates = { ...tracker, initPrice: currFloorPrice };
               const updated = await upsertStopTracker(
@@ -480,19 +479,20 @@ class CronBot {
                 this.sendErrMsg(errKey)
               );
               if (updated) UpdateStopTracker(updated);
-            } else if (currFloorPrice <= stopVal && tracker.initPrice !== 0) {
+            } else if (currFloorPrice <= stopVal && initPrice !== 0) {
               // dm user their stop has been hit
               const floorStr = currFloorPrice.toFixed(2);
-              const msg = `* Stop Loss * ${collection} Floor @ ${floorStr}`;
+              const delta = `${deltaValue * 100}%`;
+              const msg = `* Stop Loss * ${collection} Floor @ ${floorStr} < ${delta} of ${initPrice}`;
               await this.sendDm(userId, msg);
               console.log(`Alerted ${userId}: ${msg}`);
-              deleteStopTracker(tracker.id as string, this.sendErrMsg(errKey));
+              deleteStopTracker(id as string, this.sendErrMsg(errKey));
               DeleteStopTracker(tracker);
             }
-          } else if (tracker.stopTrackerType === "Stop Gain") {
+          } else if (stopTrackerType === "Stop Gain") {
             // handle stop gain
-            const stopVal = tracker.initPrice * (1 + tracker.deltaValue);
-            if (currFloorPrice < tracker.initPrice || tracker.initPrice === 0) {
+            const stopVal = initPrice * (1 + deltaValue);
+            if (currFloorPrice < initPrice || initPrice === 0) {
               // update comp price
               const updates = { ...tracker, initPrice: currFloorPrice };
               const updated = await upsertStopTracker(
@@ -500,10 +500,11 @@ class CronBot {
                 this.sendErrMsg(errKey)
               );
               if (updated) UpdateStopTracker(updated);
-            } else if (currFloorPrice >= stopVal && tracker.initPrice !== 0) {
+            } else if (currFloorPrice >= stopVal && initPrice !== 0) {
               // dm user their stop has been hit
               const floorStr = currFloorPrice.toFixed(2);
-              const msg = `* Stop Gain * ${collection} Floor @ ${floorStr}`;
+              const delta = `${deltaValue * 100}%`;
+              const msg = `* Stop Gain * ${collection} Floor @ ${floorStr} > ${delta} of ${initPrice}`;
               await this.sendDm(userId, msg);
               console.log(`Alerted ${userId}: ${msg}`);
               deleteStopTracker(tracker.id as string, this.sendErrMsg(errKey));
