@@ -263,11 +263,11 @@ export const StartListener = async (listener) => {
           const listing = listings[i]
           const solNft = await getSolNft(listing.tokenAddress);
           if (!solNft) {
-            content += `${listing.title} - Data not found...\n`
+            content += `${listing.title} - Data not found...\n\n`
             continue
           }
-          if (!isHatched) {
-            content += `${listing.title} - Not revealed yet...\n`
+          if (!isHatched(solNft)) {
+            content += `${listing.title} - Not revealed yet...\n\n`
             continue
           }
           const whiteListedAttrs = solNft.attributes.every( attr => !wlAttrs.includes(attr.value.toLowerCase()))
@@ -279,7 +279,7 @@ export const StartListener = async (listener) => {
             .sort((a, b) => (a.trait_type > b.trait_type ? 1 : -1))
             .map((a) => `${a.trait_type}: ${a.value}`)
             .join(", ");
-          content += `${listing.title} @ ${listing.price} - ${nftAttrs}\n${listing.url}\n`
+          content += `${listing.title} @ ${listing.price} - ${nftAttrs}\n${listing.url}\n\n`
         }
         
         await message.reply({ content, ephemeral: true });
