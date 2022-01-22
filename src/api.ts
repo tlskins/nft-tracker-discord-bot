@@ -35,8 +35,25 @@ import {
 } from "./types";
 import rest from "./bots/src-discord-cron-bot/rest";
 import axios, { AxiosError } from "axios";
+import { SetGlobalCollMaps } from "./collMappings";
 
 import Moment from "moment";
+
+// coordinators
+
+export const setCollectionMappings = async (
+  handleErr: (msg: string) => Promise<void>
+): Promise<void> => {
+  const collMaps = await getCollectionMappings(handleErr);
+  if (collMaps) {
+    SetGlobalCollMaps(collMaps);
+    console.log(`${collMaps.size} Collection Mappings set.`);
+  } else {
+    throw Error("Unable to load collection mappings");
+  }
+};
+
+// api calls
 
 type ServerError = { message: string };
 

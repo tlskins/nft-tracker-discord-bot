@@ -40,6 +40,7 @@ import {
   getStopTrackers,
   deleteStopTracker,
   upsertStopTracker,
+  setCollectionMappings,
 } from "../../../api";
 import {
   GetGlobalCollMaps,
@@ -73,9 +74,9 @@ class CronBot {
     this.broadcasts = new Map();
     this.usersActivity = new Map();
     this.errCounts = new Map();
-    this.setCollectionMappings();
     this.seedStopTrackers();
     this.syncMEWalletActivity();
+    setCollectionMappings(this.sendErrMsg("set-coll-map"));
   }
 
   async handleBot(): Promise<Promise<void>> {
@@ -164,10 +165,10 @@ class CronBot {
 
   // controllers
 
-  async setCollectionMappings(): Promise<void> {
-    const collMaps = await getCollectionMappings(
-      this.sendErrMsg("setCollMaps")
-    );
+  async setCollectionMappings(
+    handleErr: (msg: string) => Promise<void>
+  ): Promise<void> {
+    const collMaps = await getCollectionMappings(handleErr);
     if (collMaps) {
       SetGlobalCollMaps(collMaps);
       console.log(`${collMaps.size} Collection Mappings set.`);

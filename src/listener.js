@@ -14,6 +14,7 @@ import {
   getUserFloorTrackers,
   deleteFloorTrackers,
   upsertStopTracker,
+  setCollectionMappings,
 } from "./api";
 import {
   checkBalChange,
@@ -301,6 +302,32 @@ export const StartListener = async (listener) => {
       }
 
       return false;
+    }
+
+    // reload collection mappings
+    if (message.content === "/reload-collections") {
+      const discordId = message.author.id
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( !user ) {
+        await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
+        return false
+      }
+      if ( !user.isAdmin ) {
+        await message.reply({ content: "This command is only available for admins.", ephemeral: true })
+        return false
+      }
+      
+      await setCollectionMappings((errMsg) => message.reply({
+        content: errMsg,
+        ephemeral: true,
+      }))
+
+      await message.reply({
+        content: "Collections updated",
+        ephemeral: true,
+      });
+
+      return false
     }
 
     // add hatch tracker

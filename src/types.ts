@@ -260,6 +260,7 @@ export interface IUser {
   discordName: string;
   verified: boolean;
   isOG: boolean;
+  isAdmin: boolean;
   isEnrolled: boolean;
   enrolledAt?: string;
   inactiveDate?: string;
