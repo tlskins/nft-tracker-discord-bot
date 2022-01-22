@@ -279,7 +279,7 @@ export const StartListener = async (listener) => {
             .sort((a, b) => (a.trait_type > b.trait_type ? 1 : -1))
             .map((a) => `${a.trait_type}: ${a.value}`)
             .join(", ");
-          content += `${listing.title} @ ${listing.price} - ${nftAttrs}\n${listing.url}\n\n`
+          content += `${listing.title} @ ${listing.price} - ${nftAttrs}\n${solNft.image}\n${listing.url}\n\n`
         }
         
         await message.reply({ content, ephemeral: true });
