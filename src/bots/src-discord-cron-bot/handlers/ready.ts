@@ -25,6 +25,7 @@ import {
   buildPumpEmbed,
   toTokenAlertMsg,
 } from "./presenters";
+import { isHatched } from "../../../presenters";
 import { getSolNft } from "../../../solana/metaplex";
 import {
   deleteFloorTrackers,
@@ -108,13 +109,8 @@ class CronBot {
         const solNft = await getSolNft(address);
         if (!solNft) continue;
 
-        const noAttrs = solNft.attributes.length === 0;
-        const noReveal = solNft.attributes.some(
-          (attr) => attr.value === "Not revealed"
-        );
-        if (noAttrs || noReveal) {
-          console.log(`${address} not revealed yet...`);
-        } else {
+        // respond if hatched
+        if (isHatched(solNft)) {
           const attrStr = solNft.attributes
             .sort((a, b) => (a.trait_type > b.trait_type ? 1 : -1))
             .map((a) => `${a.trait_type}: ${a.value}`)
@@ -125,6 +121,8 @@ class CronBot {
             `* ${solNft.name} Hatched * \n${edenAddr}\n${solNft.image}\n\n${attrStr}`
           );
           RemoveHatchTracker(userId, address);
+        } else {
+          console.log(`${address} not revealed yet...`);
         }
       }
     }

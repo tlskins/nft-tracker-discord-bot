@@ -5,6 +5,7 @@ const { Client, Intents } = require("discord.js");
 import {
   updateCollMap,
   updateUser,
+  getCollectionListings,
   getEnrollment,
   getReferrals,
   getUserByDiscord,
@@ -16,6 +17,7 @@ import {
   upsertStopTracker,
   setCollectionMappings,
 } from "./api";
+import { isHatched } from "./presenters"
 import {
   checkBalChange,
   getSolTransaction
@@ -204,6 +206,7 @@ export const StartListener = async (listener) => {
       commands += "/notify-floor-below <FLOOR_PRICE> - Send in the channel of the collection you want a DM alert when the floor price is BELOW a certain number\n"
       commands += "/stop-gain <DECIMAL_PCT_CHANGE> - DM alert when the floor price has gained X% from its lowest floor\n"
       commands += "/stop-loss <DECIMAL_PCT_CHANGE> - DM alert when the floor price has fallen X% from its highest floor\n"
+      commands += "/hatch-floor <REVEAL_RANGE(1-10)> <WL_ATTRS(rare,berserker)> - DM alert when the floor price has fallen X% from its highest floor\n"
 
       await message.reply({ content: commands, ephemeral: true })
       return false
@@ -214,6 +217,77 @@ export const StartListener = async (listener) => {
       const collMap = FindGlobalCollMapByChannel(message.channel.id)
       if (!collMap) return false;
 
+      // hatch floor
+      if (message.content.startsWith("/hatch-floor ")) {
+        // validate user access
+        const discordId = message.author.id
+        const user = await getUserByDiscord(discordId, discordHandleErr)
+        if ( !user ) {
+          await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
+          return false
+        }
+        if ( !user.isOG && !user.isEnrolled && (user.inactiveDate && Moment(user.inactiveDate).isBefore(Moment()))) {
+          await message.reply({ content: "Floor reveal only available for members and OG.", ephemeral: true })
+          return false
+        }
+
+        const splitMsg = message.content.split(" ")
+
+        // range of floor to reveal
+        let start = 0
+        let end = 10
+        const rangeStr = splitMsg[1] // 1-10
+        if ( rangeStr ) {
+          start = parseInt(rangeStr.split("-")[0])-1
+          end = parseInt(rangeStr.split("-")[1])
+        }
+
+        // whitelist attrs
+        let wlAttrs = []
+        const attrsStr = splitMsg[2] // Rare,Green
+        if ( attrsStr ) {
+          wlAttrs = attrsStr.toLowerCase().split(",")
+        }
+
+        // get market listings
+        const listings = await getCollectionListings(
+          collMap.apiPath,
+          (msgErr) => message.reply({ content: msgErr, ephemeral: true })
+        )
+        if (!listings) return
+        console.log(`Found ${listings.length} listings...`)
+
+        // build message from results
+        let content = ""
+        for (let i=start;i<listings.length && i < end;i++) {
+          const listing = listings[i]
+          const solNft = await getSolNft(listing.tokenAddress);
+          if (!solNft) {
+            content += `${listing.title} - Data not found...\n`
+            continue
+          }
+          if (!isHatched) {
+            content += `${listing.title} - Not revealed yet...\n`
+            continue
+          }
+          const whiteListedAttrs = solNft.attributes.every( attr => !wlAttrs.includes(attr.value.toLowerCase()))
+          if ( wlAttrs.length > 0 && whiteListedAttrs) {
+            continue
+          }
+
+          const nftAttrs = solNft.attributes
+            .sort((a, b) => (a.trait_type > b.trait_type ? 1 : -1))
+            .map((a) => `${a.trait_type}: ${a.value}`)
+            .join(", ");
+          content += `${listing.title} @ ${listing.price} - ${nftAttrs}\n${listing.url}\n`
+        }
+        
+        await message.reply({ content, ephemeral: true });
+  
+        return false
+      }
+
+      // floor notifications
       if (message.content.startsWith("/notify-floor-")) {
         const discordId = message.author.id
         const user = await getUserByDiscord(discordId, discordHandleErr)
@@ -256,6 +330,7 @@ export const StartListener = async (listener) => {
         return false;
       }
 
+      // stop loss / gain
       if (message.content.startsWith("/stop-")) {
         const discordId = message.author.id
         const user = await getUserByDiscord(discordId, discordHandleErr)
@@ -330,7 +405,7 @@ export const StartListener = async (listener) => {
       return false
     }
 
-    // add hatch tracker
+    // get nft attributes
     if (message.content.startsWith("/nft-attributes ")) {
       const splitMsg = message.content.split(" ")
       if ( splitMsg.length !== 2 || splitMsg[1].length < 10 ) {
