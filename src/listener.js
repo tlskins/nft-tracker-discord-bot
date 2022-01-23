@@ -461,7 +461,15 @@ export const StartListener = async (listener) => {
       
       const addrStr = message.content.slice(13)
       const addresses = addrStr.split(" ")
-      addresses.forEach( address => AddHatchTracker(discordId, address))
+      addresses.forEach( address => {
+        const success = AddHatchTracker(discordId, address)
+        if (!success) {
+          message.reply({
+            content: `Token ${addresses.length} already added`,
+            ephemeral: true,
+          });
+        }
+      })
 
       await message.reply({
         content: `Added ${addresses.length} hatch tracker`,
@@ -497,6 +505,29 @@ export const StartListener = async (listener) => {
       RemoveHatchTracker(discordId, address)
       await message.reply({
         content: `Hatch tracker removed: ${address}`,
+        ephemeral: true,
+      });
+
+      return false
+    }
+
+    // clear user hatch tracker
+    if (message.content === "/clear-hatch-trackers") {
+      const discordId = message.author.id
+      const user = await getUserByDiscord(discordId, discordHandleErr)
+      if ( !user ) {
+        await message.reply({ content: "User not found. Please contact an admin.", ephemeral: true })
+        return false
+      }
+      if ( !user.isOG && !user.isEnrolled && (user.inactiveDate && Moment(user.inactiveDate).isBefore(Moment()))) {
+        await message.reply({ content: "Hatch tracker only available for members and OG.", ephemeral: true })
+        return false
+      }
+      
+      ClearUserHatchTrackers(discordId)
+
+      await message.reply({
+        content: `Hatch trackers cleared`,
         ephemeral: true,
       });
 
