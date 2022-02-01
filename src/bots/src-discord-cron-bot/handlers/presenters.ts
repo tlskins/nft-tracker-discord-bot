@@ -379,8 +379,13 @@ export const marketSumStr = (mktSum: MarketSummary): string => {
 };
 
 export const buildMarketEmbed = (tracker: CollectionTracker): MessageEmbed => {
-  const { collection, currentListings, marketSummary, bestTraitListings } =
-    tracker;
+  const {
+    collection,
+    currentListings,
+    marketSummary,
+    bestTraitListings,
+    lastEdenUpdate,
+  } = tracker;
   const description = marketSumStr(marketSummary);
 
   const embed = new MessageEmbed()
@@ -391,6 +396,12 @@ export const buildMarketEmbed = (tracker: CollectionTracker): MessageEmbed => {
     .addFields(...buildMarketEmbedFields(marketSummary))
     .addFields(...buildBestTraitEmbedFields(bestTraitListings))
     .setTimestamp();
+
+  if (lastEdenUpdate) {
+    embed.setFooter(
+      `Last Magic Eden update: ${Moment(lastEdenUpdate).fromNow()}`
+    );
+  }
 
   currentListings.slice(0, 4).forEach((listing, i) => {
     embed.addField(

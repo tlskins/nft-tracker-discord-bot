@@ -39,6 +39,7 @@ export interface CollectionTracker {
   id: string;
   collection: string;
   lastUpdated: string;
+  lastEdenUpdate?: string;
   marketSummary: MarketSummary;
 
   lastBroadcastAt: string;
