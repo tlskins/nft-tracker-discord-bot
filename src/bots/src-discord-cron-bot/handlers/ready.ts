@@ -87,9 +87,10 @@ class CronBot {
       syncSubscriptions(this.sendErrMsg("sync-subs-err"));
       // this.checkTokenAlerts(); // disable token trackers for now
     }
-    if (min % 15 === 0) {
-      this.syncMEWalletActivity();
-    }
+
+    // if (min % 15 === 0) {
+    //   this.syncMEWalletActivity();
+    // }
 
     if (min % 5 === 0) {
       this.checkHatched();
