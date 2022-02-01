@@ -76,7 +76,7 @@ class CronBot {
     this.usersActivity = new Map();
     this.errCounts = new Map();
     this.seedStopTrackers();
-    this.syncMEWalletActivity();
+    // this.syncMEWalletActivity();
     setCollectionMappings(this.sendErrMsg("set-coll-map"));
   }
 
